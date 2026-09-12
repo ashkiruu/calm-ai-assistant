@@ -1,0 +1,425 @@
+[
+  {
+    "protocol_id": "EQ-BEF-001",
+    "action_code": "LEARN_SAFE_COVER_AND_ROUTE",
+    "title": "Know safe cover and the approved route",
+    "hazard": "earthquake",
+    "settings": ["home", "school"],
+    "phase": "before",
+    "required_context": ["hazard == earthquake", "phase == before", "location == indoors"],
+    "trigger_events": ["mission_started", "learner_asks_how_to_prepare"],
+    "objective": "Prepare the learner to protect first and evacuate only after shaking.",
+    "ordered_actions": ["Identify a sturdy cover place.", "Know the approved exit route and assembly area.", "Practise the drill with an adult or teacher."],
+    "prohibited_actions": ["Do not choose a window, shelf, or doorway as the default cover place."],
+    "adult_handoff": "A teacher or guardian confirms the safe cover, route, and assembly area.",
+    "rationale": "Knowing the sequence before an earthquake reduces unsafe movement during shaking.",
+    "criticality": "P2_EDUCATIONAL",
+    "priority": 35,
+    "safe_default": "Ask the teacher or guardian to show the approved cover and route.",
+    "language": {
+      "en-PH": {"short": "Know your safe place.", "instruction": "Find a sturdy cover place and learn the approved exit and assembly area with your teacher or guardian."},
+      "fil-PH": {"short": "Alamin ang ligtas na puwesto.", "instruction": "Kilalanin ang matibay na masisilungan at ang tamang labasan at assembly area kasama ang guro o tagapag-alaga."},
+      "taglish-PH": {"short": "Know your safe place.", "instruction": "Alamin ang sturdy cover, approved exit, at assembly area kasama ang teacher o guardian."}
+    },
+    "source_claims": [
+      {"source_id": "unicef-ph-typhoon", "locator": "PDF pages 11-12", "pages": [11, 12], "disposition": "SIMPLIFY"},
+      {"source_id": "phivolcs-project-maghanda-broadcasters-manual-2022", "locator": "PDF page 50", "pages": [50], "disposition": "SIMPLIFY"}
+    ]
+  },
+  {
+    "protocol_id": "EQ-BEF-002",
+    "action_code": "RECOGNIZE_OUTDOOR_EARTHQUAKE_HAZARDS",
+    "title": "Recognize outdoor earthquake hazards",
+    "hazard": "earthquake",
+    "settings": ["outdoor"],
+    "phase": "before",
+    "required_context": ["hazard == earthquake", "phase == before", "location == outdoor"],
+    "trigger_events": ["mission_started", "learner_asks_where_is_safe"],
+    "objective": "Help the learner recognize a safer open area before shaking.",
+    "ordered_actions": ["Identify the scenario-approved open area.", "Notice buildings, trees, posts, power lines, and glass that may fall."],
+    "prohibited_actions": ["Do not select a spot beside a wall, tree, post, or power line."],
+    "adult_handoff": "A teacher or guardian confirms the outdoor safe area.",
+    "rationale": "Outdoor falling and electrical hazards must be recognized before a drill.",
+    "criticality": "P2_EDUCATIONAL",
+    "priority": 35,
+    "safe_default": "Ask an adult to identify the approved open area.",
+    "language": {
+      "en-PH": {"short": "Find the open safe area.", "instruction": "Choose the approved open area away from buildings, trees, posts, power lines, and glass."},
+      "fil-PH": {"short": "Hanapin ang ligtas na bukas na lugar.", "instruction": "Piliin ang itinakdang bukas na lugar na malayo sa gusali, puno, poste, linya ng kuryente, at salamin."},
+      "taglish-PH": {"short": "Find the open safe area.", "instruction": "Piliin ang approved open area na malayo sa buildings, trees, posts, power lines, at glass."}
+    },
+    "source_claims": [
+      {"source_id": "iecs-for-7-2-earthquake-preparedness-1", "locator": "PDF page 6", "pages": [6], "disposition": "SIMPLIFY"},
+      {"source_id": "ocd-disaster-preparedness-guidebook", "locator": "PDF page 7", "pages": [7], "disposition": "SIMPLIFY"}
+    ]
+  },
+  {
+    "protocol_id": "EQ-BEF-003",
+    "action_code": "REPORT_EARTHQUAKE_HAZARD",
+    "title": "Tell an adult about an unsafe object",
+    "hazard": "earthquake",
+    "settings": ["home", "school"],
+    "phase": "before",
+    "required_context": ["hazard == earthquake", "phase == before", "unsafe_object_visible == true"],
+    "trigger_events": ["learner_detects_unsecured_object", "learner_asks_about_hazard"],
+    "objective": "Let the learner identify hazards without moving or repairing them.",
+    "ordered_actions": ["Move away from the unsafe object.", "Tell a teacher or guardian what and where it is."],
+    "prohibited_actions": ["Do not climb, lift, tie, repair, or move heavy furniture or hanging objects."],
+    "adult_handoff": "An adult or professional secures the object.",
+    "rationale": "Hazard recognition is age-appropriate; repair and lifting are not.",
+    "criticality": "P1_IMPORTANT",
+    "priority": 60,
+    "safe_default": "Keep your distance and tell an adult.",
+    "language": {
+      "en-PH": {"short": "Step away and tell an adult.", "instruction": "Do not move the heavy or hanging object. Tell your teacher or guardian where it is."},
+      "fil-PH": {"short": "Lumayo at magsabi sa nakatatanda.", "instruction": "Huwag galawin ang mabigat o nakasabit na bagay. Sabihin sa guro o tagapag-alaga kung nasaan ito."},
+      "taglish-PH": {"short": "Step away and tell an adult.", "instruction": "Huwag galawin ang heavy o hanging object. Sabihin sa teacher o guardian kung nasaan ito."}
+    },
+    "source_claims": [
+      {"source_id": "iecs-for-7-2-earthquake-preparedness-1", "locator": "PDF page 6", "pages": [6], "disposition": "SIMPLIFY"},
+      {"source_id": "unicef-ph-typhoon", "locator": "PDF page 11", "pages": [11], "disposition": "ADULT_ONLY"}
+    ]
+  },
+  {
+    "protocol_id": "EQ-DUR-001",
+    "action_code": "DROP_COVER_HOLD",
+    "title": "Drop Cover and Hold On indoors",
+    "hazard": "earthquake",
+    "secondary_hazards": ["falling_objects", "broken_glass"],
+    "settings": ["home", "school"],
+    "phase": "during",
+    "required_context": ["hazard == earthquake", "phase == during", "shaking_active == true", "location == indoors", "approved_cover_reachable == true"],
+    "excluded_context": ["compound_hazard_override == true"],
+    "trigger_events": ["earthquake_shaking_started", "learner_leaves_cover"],
+    "objective": "Protect the learner's head and body until shaking stops.",
+    "ordered_actions": ["Drop to hands and knees.", "Take cover under the sturdy desk or table.", "Hold on and protect the head and neck.", "Stay there until shaking stops."],
+    "prohibited_actions": ["Do not run to an exit while shaking continues.", "Do not use an elevator."],
+    "adult_handoff": "After shaking stops follow the teacher or guardian's evacuation instruction.",
+    "rationale": "The learner needs an immediate protective action rather than generative advice.",
+    "criticality": "P0_CRITICAL",
+    "priority": 100,
+    "safe_default": "Remain protected until shaking stops.",
+    "blocks_action_codes": ["EVACUATE_NOW", "USE_ELEVATOR", "RETRIEVE_BELONGINGS"],
+    "language": {
+      "en-PH": {"short": "Drop, cover, and hold on.", "instruction": "Stay under the sturdy desk and protect your head and neck until the shaking stops."},
+      "fil-PH": {"short": "Yumuko, sumilong, at kumapit.", "instruction": "Manatili sa ilalim ng matibay na mesa at protektahan ang ulo at leeg hanggang tumigil ang pagyanig."},
+      "taglish-PH": {"short": "Drop, cover, and hold on.", "instruction": "Stay under the sturdy desk at protektahan ang head and neck hanggang huminto ang shaking."}
+    },
+    "source_claims": [
+      {"source_id": "iecs-for-7-2-earthquake-preparedness-1", "locator": "PDF page 6", "pages": [6], "disposition": "KEEP_EXACT"},
+      {"source_id": "phivolcs-project-maghanda-broadcasters-manual-2022", "locator": "PDF page 50", "pages": [50], "disposition": "KEEP_EXACT"},
+      {"source_id": "ocd-disaster-preparedness-guidebook", "locator": "PDF page 7", "pages": [7], "disposition": "KEEP_EXACT"}
+    ]
+  },
+  {
+    "protocol_id": "EQ-DUR-002",
+    "action_code": "AVOID_FALLING_AND_GLASS_HAZARDS",
+    "title": "Stay away from glass and falling objects",
+    "hazard": "earthquake",
+    "settings": ["home", "school"],
+    "phase": "during",
+    "required_context": ["hazard == earthquake", "phase == during", "shaking_active == true", "near_falling_or_glass_hazard == true"],
+    "trigger_events": ["learner_near_window", "learner_near_shelf", "learner_near_hanging_object"],
+    "objective": "Keep the learner away from objects likely to break or fall.",
+    "ordered_actions": ["Stay low.", "Move only the short safe distance needed to use the approved cover.", "Protect the head and neck."],
+    "prohibited_actions": ["Do not stand beside windows, cabinets, shelves, or hanging objects.", "Do not cross the room unless the approved route is safe."],
+    "adult_handoff": "Follow the teacher or guardian after shaking.",
+    "rationale": "Glass and unsecured objects can cause injury during shaking.",
+    "criticality": "P0_CRITICAL",
+    "priority": 98,
+    "safe_default": "Protect the head and use the nearest approved cover.",
+    "blocks_action_codes": ["APPROACH_WINDOW", "APPROACH_SHELF"],
+    "language": {
+      "en-PH": {"short": "Stay away from glass and shelves.", "instruction": "Stay low, protect your head, and use the nearest approved cover without crossing an unsafe area."},
+      "fil-PH": {"short": "Lumayo sa salamin at estante.", "instruction": "Manatiling mababa, protektahan ang ulo, at sumilong sa pinakamalapit na ligtas na puwesto nang hindi dumaraan sa panganib."},
+      "taglish-PH": {"short": "Stay away from glass and shelves.", "instruction": "Stay low, protect your head, at gamitin ang nearest approved cover nang hindi dumadaan sa unsafe area."}
+    },
+    "source_claims": [
+      {"source_id": "iecs-for-7-2-earthquake-preparedness-1", "locator": "PDF page 6", "pages": [6], "disposition": "KEEP_EXACT"},
+      {"source_id": "ocd-disaster-preparedness-guidebook", "locator": "PDF page 7", "pages": [7], "disposition": "KEEP_EXACT"}
+    ]
+  },
+  {
+    "protocol_id": "EQ-DUR-003",
+    "action_code": "WAIT_FOR_SHAKING_TO_STOP",
+    "title": "Do not evacuate while shaking",
+    "hazard": "earthquake",
+    "settings": ["home", "school"],
+    "phase": "during",
+    "required_context": ["hazard == earthquake", "phase == during", "shaking_active == true", "learner_heading_to_exit == true"],
+    "trigger_events": ["learner_moves_toward_exit", "learner_asks_to_run_out"],
+    "objective": "Stop unsafe evacuation while strong shaking is active.",
+    "ordered_actions": ["Stop moving toward the exit.", "Use the nearest approved cover.", "Wait until shaking stops."],
+    "prohibited_actions": ["Do not run outside during shaking.", "Do not push or use an elevator."],
+    "adult_handoff": "Evacuate only after shaking stops and the teacher or guardian directs it.",
+    "rationale": "Evacuation during shaking increases exposure to falling objects and crowd injury.",
+    "criticality": "P0_CRITICAL",
+    "priority": 100,
+    "safe_default": "Protect in place until shaking stops.",
+    "blocks_action_codes": ["EVACUATE_NOW", "RUN_TO_EXIT", "USE_ELEVATOR"],
+    "language": {
+      "en-PH": {"short": "Do not run outside while it is shaking.", "instruction": "Stop, use the nearest approved cover, and wait until the shaking stops."},
+      "fil-PH": {"short": "Huwag tumakbo palabas habang umuuga.", "instruction": "Huminto, sumilong sa pinakamalapit na ligtas na puwesto, at hintaying tumigil ang pagyanig."},
+      "taglish-PH": {"short": "Do not run outside habang umuuga.", "instruction": "Stop, use the nearest approved cover, at hintaying huminto ang shaking."}
+    },
+    "source_claims": [
+      {"source_id": "earthquake-drill", "locator": "PDF pages 1-2", "pages": [1, 2], "disposition": "SIMPLIFY"},
+      {"source_id": "iecs-for-7-2-earthquake-preparedness-1", "locator": "PDF page 6", "pages": [6], "disposition": "KEEP_EXACT"}
+    ]
+  },
+  {
+    "protocol_id": "EQ-DUR-004",
+    "action_code": "OUTDOOR_OPEN_AREA_PROTECTION",
+    "title": "Stay clear of outdoor falling hazards",
+    "hazard": "earthquake",
+    "settings": ["outdoor"],
+    "phase": "during",
+    "required_context": ["hazard == earthquake", "phase == during", "shaking_active == true", "location == outdoor"],
+    "trigger_events": ["earthquake_shaking_started", "learner_approaches_outdoor_hazard"],
+    "objective": "Keep an outdoor learner away from structures and overhead hazards.",
+    "ordered_actions": ["Stay outside.", "Protect the head and neck.", "If the short route is safe move to the approved open area.", "Remain there until shaking stops."],
+    "prohibited_actions": ["Do not enter a building.", "Do not stand beside walls, trees, posts, power lines, or glass."],
+    "adult_handoff": "After shaking follow the responsible adult's instruction.",
+    "rationale": "Outdoor learners need a location-specific action rather than an indoor cover command.",
+    "criticality": "P0_CRITICAL",
+    "priority": 100,
+    "safe_default": "Stay clear of structures and protect the head.",
+    "blocks_action_codes": ["ENTER_BUILDING", "APPROACH_TREE", "APPROACH_POWER_LINE"],
+    "language": {
+      "en-PH": {"short": "Stay outside and away from falling hazards.", "instruction": "Protect your head and move only if the short route to the approved open area is safe."},
+      "fil-PH": {"short": "Manatili sa labas at lumayo sa maaaring bumagsak.", "instruction": "Protektahan ang ulo at gumalaw lamang kung ligtas ang maikling daan papunta sa itinakdang bukas na lugar."},
+      "taglish-PH": {"short": "Stay outside and away from falling hazards.", "instruction": "Protect your head at move only kung safe ang short route papunta sa approved open area."}
+    },
+    "source_claims": [
+      {"source_id": "iecs-for-7-2-earthquake-preparedness-1", "locator": "PDF page 6", "pages": [6], "disposition": "SIMPLIFY"},
+      {"source_id": "unicef-ph-typhoon", "locator": "PDF page 12", "pages": [12], "disposition": "SIMPLIFY"}
+    ]
+  },
+  {
+    "protocol_id": "EQ-AFT-001",
+    "action_code": "SCHOOL_EVACUATE_AFTER_SHAKING",
+    "title": "Evacuate school after shaking stops",
+    "hazard": "earthquake",
+    "settings": ["school"],
+    "phase": "after",
+    "required_context": ["hazard == earthquake", "phase == after", "shaking_active == false", "teacher_evacuate_instruction == true"],
+    "trigger_events": ["shaking_stopped", "teacher_orders_evacuation"],
+    "objective": "Move the learner from class to the approved assembly area in order.",
+    "ordered_actions": ["Listen to the teacher.", "Walk through the approved exit route.", "Use stairs if needed.", "Go to the assigned assembly area and stay with the class."],
+    "prohibited_actions": ["Do not run, push, use an elevator, or retrieve belongings.", "Do not leave the assembly group."],
+    "adult_handoff": "The teacher leads evacuation and headcount.",
+    "rationale": "The school drill sequence separates protection during shaking from evacuation afterward.",
+    "criticality": "P0_CRITICAL",
+    "priority": 96,
+    "safe_default": "Stay with the teacher and follow the approved route.",
+    "blocks_action_codes": ["RUN_TO_EXIT", "USE_ELEVATOR", "RETRIEVE_BELONGINGS"],
+    "language": {
+      "en-PH": {"short": "Walk with your teacher to the assembly area.", "instruction": "Use the approved route, do not run or push, and stay with your class for headcount."},
+      "fil-PH": {"short": "Maglakad kasama ang guro papunta sa assembly area.", "instruction": "Sundin ang tamang daan, huwag tumakbo o manulak, at manatili sa klase para sa bilang."},
+      "taglish-PH": {"short": "Walk with your teacher to the assembly area.", "instruction": "Follow the approved route, huwag tumakbo o manulak, at stay with your class for headcount."}
+    },
+    "source_claims": [
+      {"source_id": "earthquake-drill", "locator": "PDF pages 1-2", "pages": [1, 2], "disposition": "SIMPLIFY"},
+      {"source_id": "iecs-for-7-2-earthquake-preparedness-1", "locator": "PDF page 6", "pages": [6], "disposition": "KEEP_EXACT"}
+    ],
+    "conflict_ids": ["CF-003"]
+  },
+  {
+    "protocol_id": "EQ-AFT-002",
+    "action_code": "HOME_EVACUATE_AFTER_SHAKING",
+    "title": "Follow the guardian after home shaking",
+    "hazard": "earthquake",
+    "settings": ["home"],
+    "phase": "after",
+    "required_context": ["hazard == earthquake", "phase == after", "shaking_active == false", "guardian_evacuate_instruction == true"],
+    "trigger_events": ["shaking_stopped", "guardian_orders_evacuation"],
+    "objective": "Let the responsible adult lead the home evacuation.",
+    "ordered_actions": ["Listen to the guardian.", "Use the approved safe route.", "Walk to the family meeting place and stay together."],
+    "prohibited_actions": ["Do not retrieve belongings.", "Do not touch utilities or damaged objects."],
+    "adult_handoff": "The guardian decides the route and handles utilities.",
+    "rationale": "A child should not assess structural or utility safety.",
+    "criticality": "P1_IMPORTANT",
+    "priority": 88,
+    "safe_default": "Stay with the guardian in the safest available area.",
+    "blocks_action_codes": ["RETRIEVE_BELONGINGS", "OPERATE_UTILITY"],
+    "language": {
+      "en-PH": {"short": "Stay with your guardian.", "instruction": "Follow the approved safe route to the family meeting place and do not touch damaged objects or utilities."},
+      "fil-PH": {"short": "Manatili kasama ang tagapag-alaga.", "instruction": "Sundin ang ligtas na daan papunta sa meeting place at huwag hawakan ang sirang bagay o kagamitan sa kuryente at gas."},
+      "taglish-PH": {"short": "Stay with your guardian.", "instruction": "Follow the approved safe route papunta sa family meeting place at huwag hawakan ang damaged objects o utilities."}
+    },
+    "source_claims": [
+      {"source_id": "unicef-ph-typhoon", "locator": "PDF pages 3 and 13", "pages": [3, 13], "disposition": "SIMPLIFY"},
+      {"source_id": "ocd-disaster-preparedness-guidebook", "locator": "PDF page 7", "pages": [7], "disposition": "SIMPLIFY"}
+    ]
+  },
+  {
+    "protocol_id": "EQ-AFT-003",
+    "action_code": "OUTDOOR_AFTERSHOCK_SAFETY",
+    "title": "Remain clear of outdoor hazards after shaking",
+    "hazard": "earthquake",
+    "settings": ["outdoor"],
+    "phase": "after",
+    "required_context": ["hazard == earthquake", "phase == after", "location == outdoor"],
+    "trigger_events": ["shaking_stopped", "learner_approaches_debris"],
+    "objective": "Keep the learner in an open safe area after an earthquake.",
+    "ordered_actions": ["Stay in the approved open area.", "Look out for debris and damaged lines from a distance.", "Wait for the responsible adult."],
+    "prohibited_actions": ["Do not approach damaged buildings, fallen lines, trees, bridges, or debris.", "Do not enter a building."],
+    "adult_handoff": "An adult or responder gives the next movement instruction.",
+    "rationale": "Aftershocks and hidden damage can make nearby structures unsafe.",
+    "criticality": "P0_CRITICAL",
+    "priority": 92,
+    "safe_default": "Remain in the approved open area.",
+    "blocks_action_codes": ["ENTER_BUILDING", "APPROACH_DEBRIS", "TOUCH_POWER_LINE"],
+    "language": {
+      "en-PH": {"short": "Stay in the open safe area.", "instruction": "Keep away from damaged buildings, debris, trees, bridges, and power lines while waiting for an adult."},
+      "fil-PH": {"short": "Manatili sa ligtas na bukas na lugar.", "instruction": "Lumayo sa sirang gusali, debris, puno, tulay, at linya ng kuryente habang naghihintay sa nakatatanda."},
+      "taglish-PH": {"short": "Stay in the open safe area.", "instruction": "Keep away from damaged buildings, debris, trees, bridges, at power lines habang naghihintay sa adult."}
+    },
+    "source_claims": [
+      {"source_id": "ocd-disaster-preparedness-guidebook", "locator": "PDF page 7", "pages": [7], "disposition": "KEEP_EXACT"},
+      {"source_id": "unicef-ph-typhoon", "locator": "PDF page 13", "pages": [13], "disposition": "SIMPLIFY"}
+    ]
+  },
+  {
+    "protocol_id": "EQ-AFT-004",
+    "action_code": "NO_REENTRY_DAMAGED_STRUCTURE",
+    "title": "Do not enter a damaged structure",
+    "hazard": "earthquake",
+    "settings": ["home", "school", "outdoor"],
+    "phase": "after",
+    "required_context": ["hazard == earthquake", "phase == after", "structure_damaged_or_not_cleared == true"],
+    "trigger_events": ["learner_attempts_reentry", "learner_asks_to_go_back"],
+    "objective": "Prevent re-entry before competent clearance.",
+    "ordered_actions": ["Stay outside in the approved safe area.", "Tell an adult why you wanted to return.", "Wait for official clearance."],
+    "prohibited_actions": ["Do not enter for belongings, pets, or another person.", "Do not inspect the damage."],
+    "adult_handoff": "A responder or qualified authority clears re-entry.",
+    "rationale": "A damaged building can fail during an aftershock.",
+    "criticality": "P0_CRITICAL",
+    "priority": 100,
+    "safe_default": "Stay outside and wait for clearance.",
+    "blocks_action_codes": ["REENTER_STRUCTURE", "RETRIEVE_BELONGINGS", "PERFORM_RESCUE"],
+    "language": {
+      "en-PH": {"short": "Do not go back inside.", "instruction": "Stay in the safe area and wait until a responsible authority says the building is safe."},
+      "fil-PH": {"short": "Huwag bumalik sa loob.", "instruction": "Manatili sa ligtas na lugar at hintayin ang abiso ng kinauukulan na ligtas ang gusali."},
+      "taglish-PH": {"short": "Do not go back inside.", "instruction": "Stay sa safe area at hintayin ang authority na sabihing safe na ang building."}
+    },
+    "source_claims": [
+      {"source_id": "ocd-disaster-preparedness-guidebook", "locator": "PDF page 7", "pages": [7], "disposition": "KEEP_EXACT"},
+      {"source_id": "phivolcs-project-maghanda-broadcasters-manual-2022", "locator": "PDF page 51", "pages": [51], "disposition": "KEEP_EXACT"},
+      {"source_id": "phivolcs-earthquake-primer-2026-web", "locator": "Current PHIVOLCS primer section on affected communities", "pages": [], "disposition": "KEEP_EXACT"}
+    ]
+  },
+  {
+    "protocol_id": "EQ-AFT-005",
+    "action_code": "REPORT_INJURY_OR_MISSING_PERSON",
+    "title": "Report injury or a missing person",
+    "hazard": "earthquake",
+    "settings": ["home", "school", "outdoor"],
+    "phase": "after",
+    "required_context": ["hazard == earthquake", "phase == after", "injury_or_missing_person_known == true", "injury_or_missing_person_report_pending == true"],
+    "trigger_events": ["learner_reports_injury", "learner_reports_missing_person"],
+    "objective": "Get trained adult help without assigning rescue or treatment to the learner.",
+    "ordered_actions": ["Tell the nearest teacher, guardian, or responder.", "State who needs help and the last safe location known.", "Remain in the safe area."],
+    "prohibited_actions": ["Do not enter a damaged area to rescue someone.", "Do not give medicine or unapproved treatment."],
+    "adult_handoff": "A trained adult or responder handles search and care.",
+    "rationale": "Clear reporting is useful and age-appropriate; rescue and treatment are not.",
+    "criticality": "P1_IMPORTANT",
+    "priority": 90,
+    "safe_default": "Tell a responsible adult and remain safe.",
+    "blocks_action_codes": ["PERFORM_RESCUE", "GIVE_MEDICINE", "ENTER_DAMAGED_AREA"],
+    "language": {
+      "en-PH": {"short": "Tell an adult who needs help.", "instruction": "Give the teacher, guardian, or responder the person's name and last safe location, then stay in the safe area."},
+      "fil-PH": {"short": "Sabihin sa nakatatanda kung sino ang nangangailangan ng tulong.", "instruction": "Ibigay sa guro, tagapag-alaga, o responder ang pangalan at huling ligtas na lugar ng tao, saka manatili sa safe area."},
+      "taglish-PH": {"short": "Tell an adult who needs help.", "instruction": "Sabihin sa teacher, guardian, o responder ang name at last safe location, then stay sa safe area."}
+    },
+    "source_claims": [
+      {"source_id": "earthquake-drill", "locator": "PDF pages 1-2", "pages": [1, 2], "disposition": "ADULT_ONLY"},
+      {"source_id": "phivolcs-project-maghanda-broadcasters-manual-2022", "locator": "PDF pages 50-51", "pages": [50, 51], "disposition": "ADULT_ONLY"}
+    ],
+    "conflict_ids": ["CF-016"]
+  },
+  {
+    "protocol_id": "EQ-AFT-006",
+    "action_code": "REPROTECT_DURING_AFTERSHOCK",
+    "title": "Protect again when an aftershock starts",
+    "hazard": "earthquake",
+    "settings": ["home", "school", "outdoor"],
+    "phase": "after",
+    "required_context": ["hazard == earthquake", "phase == after", "aftershock_active == true"],
+    "trigger_events": ["aftershock_started"],
+    "objective": "Return the learner to the approved protective action for the current location.",
+    "ordered_actions": ["Stop moving.", "Use the approved protective action for the current indoor or outdoor zone.", "Wait until the aftershock stops."],
+    "prohibited_actions": ["Do not run into or out of a building during the aftershock."],
+    "adult_handoff": "After it stops follow the responsible adult's instruction.",
+    "rationale": "An aftershock changes the current state back to active shaking.",
+    "criticality": "P0_CRITICAL",
+    "priority": 100,
+    "safe_default": "Stop and protect in the current approved zone.",
+    "blocks_action_codes": ["RUN_TO_EXIT", "ENTER_BUILDING"],
+    "language": {
+      "en-PH": {"short": "Aftershock—stop and protect again.", "instruction": "Use the approved protective action for where you are and wait until the shaking stops."},
+      "fil-PH": {"short": "Aftershock—huminto at protektahan muli ang sarili.", "instruction": "Gawin ang tamang protective action para sa iyong kinaroroonan at hintaying tumigil ang pagyanig."},
+      "taglish-PH": {"short": "Aftershock—stop and protect again.", "instruction": "Use the approved protective action for your current zone at hintaying huminto ang shaking."}
+    },
+    "source_claims": [
+      {"source_id": "ocd-disaster-preparedness-guidebook", "locator": "PDF page 7", "pages": [7], "disposition": "KEEP_EXACT"},
+      {"source_id": "phivolcs-project-maghanda-broadcasters-manual-2022", "locator": "PDF page 50", "pages": [50], "disposition": "KEEP_EXACT"}
+    ]
+  },
+  {
+    "protocol_id": "EQ-AFT-007",
+    "action_code": "WAIT_FOR_SCHOOL_EVACUATION_INSTRUCTION",
+    "title": "Wait for the school's evacuation instruction",
+    "hazard": "earthquake",
+    "settings": ["school"],
+    "phase": "after",
+    "required_context": ["hazard == earthquake", "phase == after", "shaking_active == false", "teacher_evacuate_instruction == false", "at_assembly_area == false"],
+    "trigger_events": ["shaking_stopped", "evacuation_instruction_not_yet_given"],
+    "objective": "Keep the learner with the class until the school starts the approved evacuation procedure.",
+    "ordered_actions": ["Stay with the teacher and class.", "Wait for the school's evacuation instruction.", "Move only when the teacher gives the approved route."],
+    "prohibited_actions": ["Do not choose your own exit or assembly area.", "Do not run, push, or retrieve belongings."],
+    "adult_handoff": "The teacher or designated school staff starts evacuation and identifies the approved route.",
+    "rationale": "School-specific alarm meanings and routes must come from the reviewed deployment plan, not from CALM's inference.",
+    "criticality": "P1_IMPORTANT",
+    "priority": 94,
+    "safe_default": "Stay with the teacher and wait for the approved school instruction.",
+    "blocks_action_codes": ["SELF_SELECT_ROUTE", "RUN_TO_EXIT", "RETRIEVE_BELONGINGS"],
+    "language": {
+      "en-PH": {"short": "Stay with your teacher and wait.", "instruction": "Do not choose your own exit. Move only when your teacher gives the approved route."},
+      "fil-PH": {"short": "Manatili sa guro at maghintay.", "instruction": "Huwag pumili ng sariling labasan. Gumalaw lamang kapag ibinigay ng guro ang tamang ruta."},
+      "taglish-PH": {"short": "Stay with your teacher and wait.", "instruction": "Huwag pumili ng sariling exit. Move only kapag ibinigay ng teacher ang approved route."}
+    },
+    "source_claims": [
+      {"source_id": "earthquake-drill", "locator": "PDF pages 1-2", "pages": [1, 2], "disposition": "SIMPLIFY"},
+      {"source_id": "iecs-for-7-2-earthquake-preparedness-1", "locator": "PDF page 6", "pages": [6], "disposition": "SIMPLIFY"}
+    ]
+  },
+  {
+    "protocol_id": "EQ-AFT-008",
+    "action_code": "SCHOOL_ASSEMBLY_HEADCOUNT",
+    "title": "Stay for the school assembly headcount",
+    "hazard": "earthquake",
+    "settings": ["school"],
+    "phase": "after",
+    "required_context": ["hazard == earthquake", "phase == after", "at_assembly_area == true", "headcount_active == true"],
+    "trigger_events": ["learner_reaches_assembly_area", "headcount_started"],
+    "objective": "Keep the learner in the assigned group so school staff can account for everyone.",
+    "ordered_actions": ["Stay in the assigned assembly area with the class.", "Answer when the teacher checks attendance.", "Tell the teacher about an injury or missing classmate.", "Wait for the next school instruction."],
+    "prohibited_actions": ["Do not leave the assembly group.", "Do not go back into a building or search for someone."],
+    "adult_handoff": "School staff conduct the headcount and begin the school's controlled release procedure when authorized.",
+    "rationale": "Assembly is for immediate accountability after evacuation; it is separate from reunification with an authorized adult.",
+    "criticality": "P1_IMPORTANT",
+    "priority": 95,
+    "safe_default": "Stay with the class in the assigned assembly area.",
+    "blocks_action_codes": ["LEAVE_ASSEMBLY_GROUP", "REENTER_STRUCTURE", "PERFORM_RESCUE"],
+    "language": {
+      "en-PH": {"short": "Stay with your class for headcount.", "instruction": "Answer your teacher, report anyone who may need help, and wait in the assigned assembly area."},
+      "fil-PH": {"short": "Manatili sa klase para sa bilang.", "instruction": "Sumagot sa guro, iulat kung may nangangailangan ng tulong, at maghintay sa itinakdang assembly area."},
+      "taglish-PH": {"short": "Stay with your class for headcount.", "instruction": "Answer your teacher, i-report kung may need ng help, at wait sa assigned assembly area."}
+    },
+    "source_claims": [
+      {"source_id": "earthquake-drill", "locator": "PDF pages 1-2", "pages": [1, 2], "disposition": "SIMPLIFY"},
+      {"source_id": "deped-do-033-s2021-typhoon-flood-school-preparedness", "locator": "PDF page 9", "pages": [9], "disposition": "SIMPLIFY"}
+    ]
+  }
+]

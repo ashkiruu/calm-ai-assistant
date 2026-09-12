@@ -1,0 +1,439 @@
+[
+  {
+    "protocol_id": "FIR-BEF-001",
+    "action_code": "AVOID_FIRE_STARTERS_AND_HOT_ITEMS",
+    "title": "Keep away from fire starters and hot items",
+    "hazard": "fire",
+    "settings": ["home", "school"],
+    "phase": "before",
+    "required_context": ["hazard == fire", "phase == before", "match_lighter_candle_stove_or_flame_visible == true"],
+    "trigger_events": ["learner_approaches_fire_starter", "learner_asks_to_touch_hot_item"],
+    "objective": "Prevent a learner from handling a common ignition or burn hazard.",
+    "ordered_actions": ["Do not touch the item.", "Step away.", "Tell a teacher or guardian where it is."],
+    "prohibited_actions": ["Do not play with matches, lighters, candles, a stove, chemicals, fuel, or fire.", "Do not test whether an item is hot."],
+    "adult_handoff": "A responsible adult makes the item safe.",
+    "rationale": "The BFP child manual explicitly teaches children to stay away from these hazards.",
+    "criticality": "P1_IMPORTANT",
+    "priority": 85,
+    "safe_default": "Step away and tell an adult.",
+    "blocks_action_codes": ["HANDLE_MATCH", "HANDLE_LIGHTER", "HANDLE_CANDLE", "TOUCH_STOVE"],
+    "language": {
+      "en-PH": {"short": "Do not touch it—tell an adult.", "instruction": "Step away from matches, lighters, candles, stoves, fuel, chemicals, and fire."},
+      "fil-PH": {"short": "Huwag hawakan—magsabi sa nakatatanda.", "instruction": "Lumayo sa posporo, lighter, kandila, kalan, gasolina, kemikal, at apoy."},
+      "taglish-PH": {"short": "Do not touch it—tell an adult.", "instruction": "Step away from matches, lighters, candles, stoves, fuel, chemicals, at fire."}
+    },
+    "source_claims": [
+      {"source_id": "volume-1-fire-safety-for-children", "locator": "PDF pages 210 and 301", "pages": [210, 301], "disposition": "KEEP_EXACT"},
+      {"source_id": "phivolcs-project-maghanda-broadcasters-manual-2022", "locator": "PDF page 41", "pages": [41], "disposition": "SIMPLIFY"}
+    ]
+  },
+  {
+    "protocol_id": "FIR-BEF-002",
+    "action_code": "LEARN_FIRE_EXIT_AND_MEETING_POINT",
+    "title": "Know the fire exit and meeting point",
+    "hazard": "fire",
+    "settings": ["home", "school"],
+    "phase": "before",
+    "required_context": ["hazard == fire", "phase == before", "location == indoors"],
+    "trigger_events": ["mission_started", "learner_asks_how_to_prepare"],
+    "objective": "Prepare the learner to leave quickly and gather safely.",
+    "ordered_actions": ["Know two approved ways out when available.", "Know the outdoor meeting or assembly point.", "Practise the route with a teacher or guardian.", "Keep exits clear."],
+    "prohibited_actions": ["Do not create a route through a locked, damaged, or unapproved area."],
+    "adult_handoff": "The school or guardian approves and maintains the route.",
+    "rationale": "A rehearsed route and meeting point support fast evacuation and headcount.",
+    "criticality": "P2_EDUCATIONAL",
+    "priority": 40,
+    "safe_default": "Ask the teacher or guardian to show the approved exit and meeting point.",
+    "language": {
+      "en-PH": {"short": "Know your exit and meeting point.", "instruction": "Practise the approved route with an adult and keep the way out clear."},
+      "fil-PH": {"short": "Alamin ang labasan at meeting point.", "instruction": "Sanayin ang tamang ruta kasama ang nakatatanda at panatilihing walang harang ang daan palabas."},
+      "taglish-PH": {"short": "Know your exit and meeting point.", "instruction": "Practise the approved route with an adult at keep the way out clear."}
+    },
+    "source_claims": [
+      {"source_id": "volume-1-fire-safety-for-children", "locator": "PDF pages 213, 236, and 279", "pages": [213, 236, 279], "disposition": "SIMPLIFY"},
+      {"source_id": "phivolcs-project-maghanda-broadcasters-manual-2022", "locator": "PDF page 41", "pages": [41], "disposition": "SIMPLIFY"},
+      {"source_id": "ocd-disaster-preparedness-guidebook", "locator": "PDF page 10", "pages": [10], "disposition": "SIMPLIFY"}
+    ],
+    "conflict_ids": ["CF-020"]
+  },
+  {
+    "protocol_id": "FIR-BEF-003",
+    "action_code": "RECOGNIZE_OUTDOOR_FIRE_DISTANCE",
+    "title": "Recognize an outdoor fire boundary",
+    "hazard": "fire",
+    "settings": ["outdoor"],
+    "phase": "before",
+    "required_context": ["hazard == fire", "phase == before", "location == outdoor"],
+    "trigger_events": ["mission_started", "learner_asks_about_outdoor_fire"],
+    "objective": "Teach the conservative boundary of never approaching outdoor flame or smoke.",
+    "ordered_actions": ["Identify the scenario-approved safe zone.", "Identify the nearest responsible adult or alarm point.", "Keep away from any flame or smoke."],
+    "prohibited_actions": ["Do not approach, investigate, touch, or try to put out an outdoor fire."],
+    "adult_handoff": "BFP and the local DRRMO must approve the outdoor scenario and route.",
+    "rationale": "The current local corpus lacks a complete child-specific vegetation or outdoor-fire protocol.",
+    "criticality": "P1_IMPORTANT",
+    "priority": 75,
+    "safe_default": "Keep away from flame and smoke and tell an adult.",
+    "blocks_action_codes": ["APPROACH_FIRE", "FIGHT_FIRE"],
+    "language": {
+      "en-PH": {"short": "Keep away from flame and smoke.", "instruction": "Know the approved safe zone and tell a responsible adult if you see an outdoor fire."},
+      "fil-PH": {"short": "Lumayo sa apoy at usok.", "instruction": "Alamin ang itinakdang safe zone at magsabi sa nakatatanda kapag may nakitang sunog sa labas."},
+      "taglish-PH": {"short": "Keep away from flame and smoke.", "instruction": "Know the approved safe zone at tell a responsible adult kapag may outdoor fire."}
+    },
+    "source_claims": [
+      {"source_id": "volume-1-fire-safety-for-children", "locator": "PDF page 213 general escape-to-safe-area claim", "pages": [213], "disposition": "SIMPLIFY"}
+    ],
+    "conflict_ids": ["CF-019", "CF-020"],
+    "lifecycle_state": "NEEDS_CURRENT_SOURCE",
+    "review_notes": "Conservative placeholder only; requires BFP and local DRRMO outdoor-fire protocol."
+  },
+  {
+    "protocol_id": "FIR-DUR-001",
+    "action_code": "ALERT_AND_EVACUATE_FIRE",
+    "title": "Alert and evacuate immediately",
+    "hazard": "fire",
+    "settings": ["home", "school"],
+    "phase": "during",
+    "required_context": ["hazard == fire", "phase == during", "fire_or_smoke_confirmed == true", "safe_exit_available == true"],
+    "trigger_events": ["fire_detected", "smoke_detected", "fire_alarm_active"],
+    "objective": "Start immediate life-safety evacuation without assigning suppression to the child.",
+    "ordered_actions": ["Alert the nearest adult or teacher and activate an accessible alarm if safe.", "Use the approved safe exit immediately.", "Go to the meeting or assembly point."],
+    "prohibited_actions": ["Do not stop to fight the fire.", "Do not collect belongings or look for pets.", "Do not delay to make a call while still in danger."],
+    "adult_handoff": "An adult or responder makes the emergency call and handles suppression unless the deployment has a separately approved safe call step.",
+    "rationale": "For a Grade 4 learner evacuation outranks suppression or possessions.",
+    "criticality": "P0_CRITICAL",
+    "priority": 100,
+    "safe_default": "Alert and leave by the approved safe exit.",
+    "blocks_action_codes": ["FIGHT_FIRE", "USE_EXTINGUISHER", "RETRIEVE_BELONGINGS", "RESCUE_PET"],
+    "language": {
+      "en-PH": {"short": "Alert an adult and evacuate now.", "instruction": "Use the approved safe exit and go straight to the meeting point. Leave belongings behind."},
+      "fil-PH": {"short": "Magbabala sa nakatatanda at lumikas ngayon.", "instruction": "Gamitin ang tamang ligtas na labasan at dumiretso sa meeting point. Iwan ang mga gamit."},
+      "taglish-PH": {"short": "Alert an adult and evacuate now.", "instruction": "Use the approved safe exit at dumiretso sa meeting point. Leave your belongings."}
+    },
+    "source_claims": [
+      {"source_id": "volume-1-fire-safety-for-children", "locator": "PDF pages 211 and 213", "pages": [211, 213], "disposition": "SIMPLIFY"},
+      {"source_id": "ocd-disaster-preparedness-guidebook", "locator": "PDF page 10", "pages": [10], "disposition": "KEEP_EXACT"}
+    ],
+    "conflict_ids": ["CF-006", "CF-018"]
+  },
+  {
+    "protocol_id": "FIR-DUR-002",
+    "action_code": "USE_STAIRS_NOT_ELEVATOR",
+    "title": "Use stairs not an elevator in fire",
+    "hazard": "fire",
+    "settings": ["home", "school"],
+    "phase": "during",
+    "required_context": ["hazard == fire", "phase == during", "multi_level_building == true", "approved_stair_route_safe == true"],
+    "trigger_events": ["learner_approaches_elevator", "evacuation_route_requires_level_change"],
+    "objective": "Keep the learner off an elevator during a fire.",
+    "ordered_actions": ["Follow the approved exit signs or teacher.", "Use the safe stair route.", "Continue to the outdoor meeting point."],
+    "prohibited_actions": ["Do not use an elevator.", "Do not use a stair route blocked by smoke or fire."],
+    "adult_handoff": "A teacher or responder redirects the group if the normal stair route is unsafe.",
+    "rationale": "Fire evacuation guidance consistently directs people to stairs rather than elevators.",
+    "criticality": "P0_CRITICAL",
+    "priority": 96,
+    "safe_default": "Use only the scenario-approved safe stair route.",
+    "blocks_action_codes": ["USE_ELEVATOR", "ENTER_BLOCKED_ROUTE"],
+    "language": {
+      "en-PH": {"short": "Use the safe stairs, not the elevator.", "instruction": "Follow the approved exit route to the meeting point and do not enter a route blocked by smoke or fire."},
+      "fil-PH": {"short": "Gamitin ang ligtas na hagdan, hindi elevator.", "instruction": "Sundin ang tamang exit route papunta sa meeting point at huwag pumasok sa daang may usok o apoy."},
+      "taglish-PH": {"short": "Use the safe stairs, not the elevator.", "instruction": "Follow the approved exit route to the meeting point at huwag pumasok sa route na blocked ng smoke o fire."}
+    },
+    "source_claims": [
+      {"source_id": "ocd-disaster-preparedness-guidebook", "locator": "PDF page 10", "pages": [10], "disposition": "KEEP_EXACT"},
+      {"source_id": "phivolcs-project-maghanda-broadcasters-manual-2022", "locator": "PDF page 42", "pages": [42], "disposition": "KEEP_EXACT"},
+      {"source_id": "volume-3-fire-safety-for-young-adults", "locator": "PDF page 129 evacuation narrative", "pages": [129], "disposition": "SIMPLIFY"}
+    ]
+  },
+  {
+    "protocol_id": "FIR-DUR-003",
+    "action_code": "DO_NOT_OPEN_HOT_OR_SMOKY_DOOR",
+    "title": "Do not open a hot or smoky door",
+    "hazard": "fire",
+    "settings": ["home", "school"],
+    "phase": "during",
+    "required_context": ["hazard == fire", "phase == during", "door_hot_or_smoke_leaking == true"],
+    "trigger_events": ["learner_approaches_hot_door", "learner_asks_to_open_door"],
+    "objective": "Block a route that the trusted VR state marks unsafe.",
+    "ordered_actions": ["Do not open the door.", "Use the approved alternate exit if it is safe.", "If no safe exit exists use the trapped-person protocol."],
+    "prohibited_actions": ["Do not touch or open the marked hot door.", "Do not enter smoke or flame."],
+    "adult_handoff": "A teacher or responder determines the alternate route.",
+    "rationale": "CALM should use a trusted door state rather than asking a child to test a possibly dangerous surface.",
+    "criticality": "P0_CRITICAL",
+    "priority": 100,
+    "safe_default": "Keep the door closed and use the approved alternate or trapped protocol.",
+    "blocks_action_codes": ["OPEN_HOT_DOOR", "ENTER_BLOCKED_ROUTE"],
+    "language": {
+      "en-PH": {"short": "Do not open that door.", "instruction": "Use the approved alternate exit if it is safe. If there is no safe exit, signal for help."},
+      "fil-PH": {"short": "Huwag buksan ang pintong iyon.", "instruction": "Gamitin ang tamang alternatibong labasan kung ligtas. Kung walang ligtas na labasan, humingi ng tulong."},
+      "taglish-PH": {"short": "Do not open that door.", "instruction": "Use the approved alternate exit kung safe. Kung walang safe exit, signal for help."}
+    },
+    "source_claims": [
+      {"source_id": "ocd-disaster-preparedness-guidebook", "locator": "PDF page 10", "pages": [10], "disposition": "CONFLICT_REVIEW"},
+      {"source_id": "phivolcs-project-maghanda-broadcasters-manual-2022", "locator": "PDF page 41", "pages": [41], "disposition": "CONFLICT_REVIEW"}
+    ],
+    "review_notes": "Uses trusted VR door state instead of instructing a child to touch-test a real door."
+  },
+  {
+    "protocol_id": "FIR-DUR-004",
+    "action_code": "CRAWL_LOW_UNDER_SMOKE",
+    "title": "Stay low and crawl under smoke",
+    "hazard": "fire",
+    "settings": ["home", "school"],
+    "phase": "during",
+    "required_context": ["hazard == fire", "phase == during", "smoke_present == true", "approved_exit_route_safe == true"],
+    "trigger_events": ["smoke_enters_route", "learner_stands_in_smoke"],
+    "objective": "Move the learner through the approved escape route below smoke.",
+    "ordered_actions": ["Get low.", "Crawl along the approved safe route.", "Keep moving to the exit and meeting point."],
+    "prohibited_actions": ["Do not stand in the smoke.", "Do not delay to find or wet a cloth.", "Do not enter a route blocked by fire."],
+    "adult_handoff": "A teacher or responder selects another route if the current one is blocked.",
+    "rationale": "Low movement is an escape action; a damp cloth must not be presented as smoke protection.",
+    "criticality": "P0_CRITICAL",
+    "priority": 99,
+    "safe_default": "Stay low and follow the approved safe route out.",
+    "blocks_action_codes": ["STAND_IN_SMOKE", "FIND_WET_CLOTH", "ENTER_BLOCKED_ROUTE"],
+    "language": {
+      "en-PH": {"short": "Get low and crawl to the safe exit.", "instruction": "Follow the approved route without stopping to find a cloth, then go to the meeting point."},
+      "fil-PH": {"short": "Yumuko at gumapang papunta sa ligtas na labasan.", "instruction": "Sundin ang tamang ruta nang hindi humihinto para humanap ng tela, saka pumunta sa meeting point."},
+      "taglish-PH": {"short": "Get low and crawl to the safe exit.", "instruction": "Follow the approved route without stopping para humanap ng cloth, then go to the meeting point."}
+    },
+    "source_claims": [
+      {"source_id": "volume-1-fire-safety-for-children", "locator": "PDF page 211 evacuation narrative", "pages": [211], "disposition": "SIMPLIFY"},
+      {"source_id": "ocd-disaster-preparedness-guidebook", "locator": "PDF page 10", "pages": [10], "disposition": "CONFLICT_REVIEW"},
+      {"source_id": "phivolcs-project-maghanda-broadcasters-manual-2022", "locator": "PDF page 41", "pages": [41], "disposition": "CONFLICT_REVIEW"}
+    ],
+    "conflict_ids": ["CF-007", "CF-017"]
+  },
+  {
+    "protocol_id": "FIR-DUR-005",
+    "action_code": "STOP_DROP_ROLL",
+    "title": "Stop Drop and Roll for burning clothes",
+    "hazard": "fire",
+    "settings": ["home", "school", "outdoor"],
+    "phase": "during",
+    "required_context": ["hazard == fire", "phase == during", "learner_clothing_on_fire == true"],
+    "trigger_events": ["clothing_ignited", "learner_runs_with_clothing_on_fire"],
+    "objective": "Extinguish flame on the learner's clothing without running.",
+    "ordered_actions": ["Stop.", "Drop to the ground.", "Cover the face with the hands if possible.", "Roll over and over until the flame is out.", "Call for adult help."],
+    "prohibited_actions": ["Do not run.", "Do not continue normal evacuation while clothing is burning."],
+    "adult_handoff": "A teacher, guardian, or responder checks the learner and obtains care.",
+    "rationale": "This self-protective action requires exact immediate wording.",
+    "criticality": "P0_CRITICAL",
+    "priority": 100,
+    "safe_default": "Stop, drop, cover the face, and roll.",
+    "blocks_action_codes": ["RUN_WHILE_CLOTHING_BURNS"],
+    "language": {
+      "en-PH": {"short": "Stop, drop, cover your face, and roll.", "instruction": "Keep rolling until the flame is out, then call for adult help."},
+      "fil-PH": {"short": "Huminto, dumapa, takpan ang mukha, at gumulong.", "instruction": "Magpagulong-gulong hanggang mawala ang apoy, saka humingi ng tulong sa nakatatanda."},
+      "taglish-PH": {"short": "Stop, drop, cover your face, and roll.", "instruction": "Keep rolling hanggang mawala ang flame, then call an adult for help."}
+    },
+    "source_claims": [
+      {"source_id": "volume-1-fire-safety-for-children", "locator": "PDF page 212", "pages": [212], "disposition": "KEEP_EXACT"},
+      {"source_id": "ocd-disaster-preparedness-guidebook", "locator": "PDF page 10", "pages": [10], "disposition": "KEEP_EXACT"},
+      {"source_id": "phivolcs-project-maghanda-broadcasters-manual-2022", "locator": "PDF page 42", "pages": [42], "disposition": "KEEP_EXACT"}
+    ]
+  },
+  {
+    "protocol_id": "FIR-DUR-006",
+    "action_code": "SIGNAL_IF_TRAPPED",
+    "title": "Signal for help when trapped",
+    "hazard": "fire",
+    "settings": ["home", "school"],
+    "phase": "during",
+    "required_context": ["hazard == fire", "phase == during", "no_safe_exit_available == true"],
+    "trigger_events": ["all_approved_exits_blocked", "learner_attempts_to_hide", "learner_attempts_to_jump"],
+    "objective": "Keep the learner visible and connected to rescuers without entering fire.",
+    "ordered_actions": ["Stay in the safest available space away from smoke and flame.", "Keep the barrier between you and the fire closed if already closed.", "Call out, make noise, or signal at a safe window.", "Tell a responder your location if communication is available."],
+    "prohibited_actions": ["Do not hide in a closet or under furniture.", "Do not jump from a window.", "Do not open a hot or smoky door."],
+    "adult_handoff": "Responders conduct rescue.",
+    "rationale": "The learner needs an explicit no-hide and no-jump fallback when evacuation is impossible.",
+    "criticality": "P0_CRITICAL",
+    "priority": 100,
+    "safe_default": "Stay visible, keep away from smoke and flame, and signal for help.",
+    "blocks_action_codes": ["HIDE", "JUMP_FROM_WINDOW", "OPEN_HOT_DOOR"],
+    "language": {
+      "en-PH": {"short": "Do not hide or jump—signal for help.", "instruction": "Stay in the safest available space, keep the barrier closed, and call out or signal at a safe window."},
+      "fil-PH": {"short": "Huwag magtago o tumalon—humingi ng tulong.", "instruction": "Manatili sa pinakaligtas na lugar, panatilihing sarado ang harang, at sumigaw o magsenyas sa ligtas na bintana."},
+      "taglish-PH": {"short": "Do not hide or jump—signal for help.", "instruction": "Stay sa safest available space, keep the barrier closed, at call out or signal sa safe window."}
+    },
+    "source_claims": [
+      {"source_id": "phivolcs-project-maghanda-broadcasters-manual-2022", "locator": "PDF page 42", "pages": [42], "disposition": "SIMPLIFY"},
+      {"source_id": "ocd-disaster-preparedness-guidebook", "locator": "PDF page 10", "pages": [10], "disposition": "CONFLICT_REVIEW"}
+    ]
+  },
+  {
+    "protocol_id": "FIR-DUR-007",
+    "action_code": "LEARNER_MUST_NOT_FIGHT_FIRE",
+    "title": "Do not fight the fire",
+    "hazard": "fire",
+    "settings": ["home", "school", "outdoor"],
+    "phase": "during",
+    "required_context": ["hazard == fire", "phase == during", "learner_considers_suppression == true"],
+    "trigger_events": ["learner_reaches_for_extinguisher", "learner_asks_how_to_put_out_fire", "learner_approaches_fire"],
+    "objective": "Prevent a Grade 4 learner from delaying escape or attempting suppression.",
+    "ordered_actions": ["Move away from the fire.", "Alert an adult or alarm if safely reachable.", "Use the approved safe exit or safe zone."],
+    "prohibited_actions": ["Do not use an extinguisher, water, cloth, lid, sand, hose, or any other item to fight the fire.", "Do not touch LPG, gas, electricity, or appliances."],
+    "adult_handoff": "A trained adult or firefighter handles suppression and utilities.",
+    "rationale": "Source manuals contain conflicting supervised-extinguisher lessons; CALM uses the conservative learner boundary.",
+    "criticality": "P0_CRITICAL",
+    "priority": 100,
+    "safe_default": "Evacuate and alert an adult.",
+    "blocks_action_codes": ["USE_EXTINGUISHER", "FIGHT_FIRE", "OPERATE_LPG", "OPERATE_ELECTRICITY"],
+    "language": {
+      "en-PH": {"short": "Do not fight the fire—move away.", "instruction": "Alert an adult and use the approved safe exit or safe zone. Firefighters handle the fire."},
+      "fil-PH": {"short": "Huwag apulahin ang sunog—lumayo.", "instruction": "Magbabala sa nakatatanda at gamitin ang tamang ligtas na labasan o safe zone. Bumbero ang hahawak sa apoy."},
+      "taglish-PH": {"short": "Do not fight the fire—move away.", "instruction": "Alert an adult and use the approved safe exit or safe zone. Firefighters ang hahawak sa fire."}
+    },
+    "source_claims": [
+      {"source_id": "volume-1-fire-safety-for-children", "locator": "PDF pages 201-203, 211-213, and 242", "pages": [201, 202, 203, 211, 212, 213, 242], "disposition": "CONFLICT_REVIEW"},
+      {"source_id": "phivolcs-project-maghanda-broadcasters-manual-2022", "locator": "PDF pages 41-42", "pages": [41, 42], "disposition": "CONFLICT_REVIEW"}
+    ],
+    "conflict_ids": ["CF-006", "CF-008"]
+  },
+  {
+    "protocol_id": "FIR-DUR-008",
+    "action_code": "OUTDOOR_MOVE_AWAY_AND_ALERT",
+    "title": "Move away from an outdoor fire",
+    "hazard": "fire",
+    "settings": ["outdoor"],
+    "phase": "during",
+    "required_context": ["hazard == fire", "phase == during", "location == outdoor", "fire_or_smoke_confirmed == true"],
+    "trigger_events": ["outdoor_fire_detected", "learner_approaches_outdoor_fire"],
+    "objective": "Move the learner to the scenario-approved outdoor safe zone.",
+    "ordered_actions": ["Turn away from the fire and smoke.", "Follow the trusted VR route to the approved safe zone.", "Alert a responsible adult.", "Remain there for instructions."],
+    "prohibited_actions": ["Do not approach, investigate, record, rescue, or fight the fire.", "Do not choose a route through smoke."],
+    "adult_handoff": "BFP and the local DRRMO approve the exact route and response.",
+    "rationale": "This conservative placeholder closes a dangerous gap but needs specialist local validation.",
+    "criticality": "P0_CRITICAL",
+    "priority": 100,
+    "safe_default": "Move away from fire and smoke to the approved safe zone.",
+    "blocks_action_codes": ["APPROACH_FIRE", "FIGHT_FIRE", "ENTER_SMOKE", "PERFORM_RESCUE"],
+    "language": {
+      "en-PH": {"short": "Move away from the fire and smoke.", "instruction": "Follow the approved safe route, alert an adult, and stay in the safe zone."},
+      "fil-PH": {"short": "Lumayo sa apoy at usok.", "instruction": "Sundin ang itinakdang ligtas na ruta, magsabi sa nakatatanda, at manatili sa safe zone."},
+      "taglish-PH": {"short": "Move away from the fire and smoke.", "instruction": "Follow the approved safe route, alert an adult, at stay sa safe zone."}
+    },
+    "source_claims": [
+      {"source_id": "volume-1-fire-safety-for-children", "locator": "PDF page 213 general escape-to-safe-area claim", "pages": [213], "disposition": "SIMPLIFY"}
+    ],
+    "conflict_ids": ["CF-019", "CF-020"],
+    "lifecycle_state": "NEEDS_CURRENT_SOURCE",
+    "review_notes": "Not eligible for runtime until BFP and local DRRMO approve the outdoor-fire scenario."
+  },
+  {
+    "protocol_id": "FIR-AFT-001",
+    "action_code": "ONCE_OUT_STAY_OUT",
+    "title": "Once outside stay outside",
+    "hazard": "fire",
+    "settings": ["home", "school", "outdoor"],
+    "phase": "after",
+    "required_context": ["hazard == fire", "phase == after", "learner_outside_hazard_zone == true", "reentry_not_cleared == true"],
+    "trigger_events": ["learner_reaches_safe_zone", "learner_attempts_reentry"],
+    "objective": "Prevent re-entry after fire evacuation.",
+    "ordered_actions": ["Stay at the meeting, assembly, or safe point.", "Tell an adult if someone or something is still inside.", "Wait for firefighter or authority clearance."],
+    "prohibited_actions": ["Do not go back for a person, pet, phone, bag, or any belonging.", "Do not enter to check whether the fire is out."],
+    "adult_handoff": "Firefighters handle rescue, suppression, and re-entry clearance.",
+    "rationale": "Re-entry exposes the learner to heat, smoke, collapse, and renewed fire.",
+    "criticality": "P0_CRITICAL",
+    "priority": 100,
+    "safe_default": "Remain outside at the safe point.",
+    "blocks_action_codes": ["REENTER_STRUCTURE", "RESCUE_PET", "RETRIEVE_BELONGINGS", "PERFORM_RESCUE"],
+    "language": {
+      "en-PH": {"short": "Once out, stay out.", "instruction": "Stay at the safe point, tell an adult who or what is inside, and wait for firefighter clearance."},
+      "fil-PH": {"short": "Kapag nakalabas na, manatili sa labas.", "instruction": "Manatili sa safe point, sabihin sa nakatatanda kung sino o ano ang nasa loob, at hintayin ang pahintulot ng bumbero."},
+      "taglish-PH": {"short": "Once out, stay out.", "instruction": "Stay at the safe point, tell an adult kung sino o ano ang nasa loob, at wait for firefighter clearance."}
+    },
+    "source_claims": [
+      {"source_id": "volume-1-fire-safety-for-children", "locator": "PDF pages 211 and 213", "pages": [211, 213], "disposition": "KEEP_EXACT"},
+      {"source_id": "ocd-disaster-preparedness-guidebook", "locator": "PDF page 10", "pages": [10], "disposition": "KEEP_EXACT"},
+      {"source_id": "phivolcs-project-maghanda-broadcasters-manual-2022", "locator": "PDF page 42", "pages": [42], "disposition": "KEEP_EXACT"}
+    ]
+  },
+  {
+    "protocol_id": "FIR-AFT-002",
+    "action_code": "FIRE_ASSEMBLY_AND_HEADCOUNT",
+    "title": "Stay at the meeting point for headcount",
+    "hazard": "fire",
+    "settings": ["home", "school"],
+    "phase": "after",
+    "required_context": ["hazard == fire", "phase == after", "learner_outside_hazard_zone == true"],
+    "trigger_events": ["learner_arrives_meeting_point", "headcount_started"],
+    "objective": "Keep the learner available for family or school accounting.",
+    "ordered_actions": ["Go to the assigned meeting or assembly point.", "Stay with the family or class.", "Answer the headcount.", "Report a missing person to the adult in charge."],
+    "prohibited_actions": ["Do not leave the group or return inside.", "Do not search for a missing person."],
+    "adult_handoff": "The guardian or school staff performs headcount and reports missing people to responders.",
+    "rationale": "A fixed gathering point lets adults identify who may need help.",
+    "criticality": "P1_IMPORTANT",
+    "priority": 90,
+    "safe_default": "Stay with the assigned group at the safe point.",
+    "blocks_action_codes": ["LEAVE_ASSEMBLY", "PERFORM_RESCUE", "REENTER_STRUCTURE"],
+    "language": {
+      "en-PH": {"short": "Stay at the meeting point.", "instruction": "Stay with your family or class for headcount and tell the adult in charge if someone is missing."},
+      "fil-PH": {"short": "Manatili sa meeting point.", "instruction": "Manatili kasama ang pamilya o klase para sa bilang at sabihin sa nakatatanda kung may nawawala."},
+      "taglish-PH": {"short": "Stay at the meeting point.", "instruction": "Stay with your family or class for headcount at tell the adult in charge kung may missing."}
+    },
+    "source_claims": [
+      {"source_id": "volume-1-fire-safety-for-children", "locator": "PDF page 213 evacuation and meeting-point narrative", "pages": [213], "disposition": "SIMPLIFY"},
+      {"source_id": "volume-3-fire-safety-for-young-adults", "locator": "PDF pages 418-420 staff-led evacuation and headcount", "pages": [418, 419, 420], "disposition": "ADULT_ONLY"},
+      {"source_id": "philippines-04-irr-of-fire-code-of-the-philippines-2008-irr", "locator": "PDF page 232 school drill", "pages": [232], "disposition": "ADULT_ONLY"}
+    ]
+  },
+  {
+    "protocol_id": "FIR-AFT-003",
+    "action_code": "OUTDOOR_FIRE_KEEP_DISTANCE_AFTER",
+    "title": "Keep distance after an outdoor fire",
+    "hazard": "fire",
+    "settings": ["outdoor"],
+    "phase": "after",
+    "required_context": ["hazard == fire", "phase == after", "outdoor_fire_area_not_cleared == true"],
+    "trigger_events": ["visible_flame_stops", "learner_attempts_cleanup", "learner_approaches_burn_area"],
+    "objective": "Prevent approach to a burn area that may remain hot or unstable.",
+    "ordered_actions": ["Remain at the approved safe zone.", "Tell an adult about smoke, hot areas, or missing people.", "Wait for responder clearance."],
+    "prohibited_actions": ["Do not touch ash, debris, wires, containers, or burned objects.", "Do not perform cleanup or rescue."],
+    "adult_handoff": "Responders assess and clear the area.",
+    "rationale": "The outdoor-fire after-phase lacks a child-specific national source and requires local approval.",
+    "criticality": "P1_IMPORTANT",
+    "priority": 88,
+    "safe_default": "Keep your distance and wait for responders.",
+    "blocks_action_codes": ["APPROACH_BURN_AREA", "CLEANUP_FIRE_AREA", "PERFORM_RESCUE"],
+    "language": {
+      "en-PH": {"short": "Keep away from the burned area.", "instruction": "Stay in the approved safe zone, report hazards to an adult, and wait for responder clearance."},
+      "fil-PH": {"short": "Lumayo sa nasunog na lugar.", "instruction": "Manatili sa itinakdang safe zone, ireport ang panganib sa nakatatanda, at hintayin ang pahintulot ng responder."},
+      "taglish-PH": {"short": "Keep away from the burned area.", "instruction": "Stay sa approved safe zone, report hazards to an adult, at wait for responder clearance."}
+    },
+    "source_claims": [
+      {"source_id": "volume-1-fire-safety-for-children", "locator": "PDF page 213 general safe-area claim", "pages": [213], "disposition": "SIMPLIFY"}
+    ],
+    "conflict_ids": ["CF-019"],
+    "lifecycle_state": "NEEDS_CURRENT_SOURCE",
+    "review_notes": "Requires BFP and local DRRMO validation before runtime."
+  },
+  {
+    "protocol_id": "FIR-AFT-004",
+    "action_code": "REPORT_FIRE_INJURY",
+    "title": "Report a burn or injury",
+    "hazard": "fire",
+    "settings": ["home", "school", "outdoor"],
+    "phase": "after",
+    "required_context": ["hazard == fire", "phase == after", "injury_suspected == true"],
+    "trigger_events": ["learner_reports_burn", "learner_reports_smoke_exposure", "learner_reports_injury"],
+    "objective": "Escalate a possible injury without giving unapproved medical treatment.",
+    "ordered_actions": ["Tell a teacher, guardian, or responder immediately.", "State what hurts or what happened.", "Stay in the safe area and follow the trained adult."],
+    "prohibited_actions": ["Do not diagnose the injury.", "Do not apply medicine, cream, ice, or other treatment unless a trained adult directs it."],
+    "adult_handoff": "A trained adult or responder assesses and treats the learner.",
+    "rationale": "CALM should recognize the need for help but not act as a medical service.",
+    "criticality": "P1_IMPORTANT",
+    "priority": 92,
+    "safe_default": "Tell a trained adult immediately.",
+    "blocks_action_codes": ["SELF_TREAT_BURN", "GIVE_MEDICINE"],
+    "language": {
+      "en-PH": {"short": "Tell a trained adult about the injury.", "instruction": "Say what happened and stay in the safe area. Do not put medicine, cream, or ice on it by yourself."},
+      "fil-PH": {"short": "Sabihin agad sa nakatatandang may pagsasanay ang pinsala.", "instruction": "Sabihin ang nangyari at manatili sa safe area. Huwag maglagay ng gamot, cream, o yelo nang mag-isa."},
+      "taglish-PH": {"short": "Tell a trained adult about the injury.", "instruction": "Say what happened and stay sa safe area. Huwag maglagay ng medicine, cream, or ice by yourself."}
+    },
+    "source_claims": [
+      {"source_id": "phivolcs-project-maghanda-broadcasters-manual-2022", "locator": "PDF page 42 injury-check handoff", "pages": [42], "disposition": "ADULT_ONLY"},
+      {"source_id": "volume-1-fire-safety-for-children", "locator": "PDF pages 211-213 adult and firefighter handoff", "pages": [211, 212, 213], "disposition": "SIMPLIFY"}
+    ],
+    "conflict_ids": ["CF-016"]
+  }
+]

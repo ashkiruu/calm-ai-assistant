@@ -1,0 +1,23 @@
+# Recorded sessions. Sanitized by calm_core/session_log.py, but a run's events
+# are evaluation data belonging to that run rather than to the repository, and
+# they accumulate.
+logs/
+
+venv/
+__pycache__/
+*.pyc
+
+# Local assistant/editor metadata
+.claude/
+
+# Generated scratch outputs and analysis artifacts
+tmp/
+graphify-out/
+archive/legacy_vector_db_raw_pdf_2026-07-31/
+
+# Common local caches and secrets
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.env
+.env.*

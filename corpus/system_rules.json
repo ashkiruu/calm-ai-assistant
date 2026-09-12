@@ -1,0 +1,204 @@
+{
+  "schema_version": "1.0",
+  "purpose": "Deterministic retrieval and response rules that sit above all CALM protocol cards.",
+  "trusted_context_order": [
+    "trusted_vr_state",
+    "authenticated_authority_state",
+    "deployment_configuration",
+    "learner_question",
+    "speech_transcript"
+  ],
+  "runtime_eligibility": {
+    "allow_only_lifecycle_state": "RUNTIME_APPROVED",
+    "blocked_states": [
+      "DRAFT",
+      "EVIDENCE_LINKED",
+      "ROLE_CONTEXT_CLASSIFIED",
+      "DOMAIN_APPROVED",
+      "CHILD_SAFETY_APPROVED",
+      "LANGUAGE_EQUIVALENCE_APPROVED",
+      "VR_RULE_TESTED",
+      "PILOT_APPROVED",
+      "CONFLICT_HOLD",
+      "NEEDS_CURRENT_SOURCE",
+      "SUSPENDED",
+      "SUPERSEDED",
+      "RETIRED"
+    ],
+    "revision_rule": "Retrieve only the highest revision of a protocol_id whose lifecycle_state is RUNTIME_APPROVED."
+  },
+  "priority_rules": [
+    {
+      "rule_id": "SYS-PRI-001",
+      "when": "learner_clothing_on_fire == true",
+      "select_action_code": "STOP_DROP_ROLL",
+      "suppress": ["NORMAL_EVACUATION_WHILE_CLOTHING_BURNS"]
+    },
+    {
+      "rule_id": "SYS-PRI-002A",
+      "when": "hazard == earthquake && shaking_active == true && learner_heading_to_exit == true",
+      "select_action_code": "WAIT_FOR_SHAKING_TO_STOP",
+      "suppress": ["EVACUATE_NOW", "RUN_TO_EXIT", "USE_ELEVATOR"]
+    },
+    {
+      "rule_id": "SYS-PRI-002",
+      "when": "hazard == earthquake && shaking_active == true && location == indoors",
+      "select_action_code": "DROP_COVER_HOLD",
+      "suppress": ["EVACUATE_NOW", "RUN_TO_EXIT", "USE_ELEVATOR"]
+    },
+    {
+      "rule_id": "SYS-PRI-003",
+      "when": "hazard == earthquake && shaking_active == true && location == outdoor",
+      "select_action_code": "OUTDOOR_OPEN_AREA_PROTECTION",
+      "suppress": ["ENTER_BUILDING"]
+    },
+    {
+      "rule_id": "SYS-PRI-003A",
+      "when": "hazard == earthquake && phase == after && injury_or_missing_person_known == true && injury_or_missing_person_report_pending == true",
+      "select_action_code": "REPORT_INJURY_OR_MISSING_PERSON",
+      "suppress": ["PERFORM_RESCUE", "ENTER_DAMAGED_AREA"]
+    },
+    {
+      "rule_id": "SYS-PRI-003B",
+      "when": "hazard == earthquake && phase == after && structure_damaged_or_not_cleared == true && learner_attempting_reentry == true",
+      "select_action_code": "NO_REENTRY_DAMAGED_STRUCTURE",
+      "suppress": ["REENTER_STRUCTURE", "RETRIEVE_BELONGINGS", "PERFORM_RESCUE"]
+    },
+    {
+      "rule_id": "SYS-PRI-004",
+      "when": "hazard == typhoon && authenticated_evacuation_order == true",
+      "select_action_code": "OBEY_AUTHENTICATED_EVACUATION_ORDER",
+      "suppress": ["SHELTER_IN_PLACE_GENERIC"]
+    },
+    {
+      "rule_id": "SYS-PRI-005",
+      "when": "hazard == fire && no_safe_exit_available == true",
+      "select_action_code": "SIGNAL_IF_TRAPPED",
+      "suppress": ["ENTER_BLOCKED_ROUTE", "HIDE", "JUMP_FROM_WINDOW"]
+    },
+    {
+      "rule_id": "SYS-PRI-006",
+      "when": "floodwater_present == true && learner_approaches_floodwater == true",
+      "select_action_code": "NEVER_ENTER_FLOODWATER",
+      "suppress": ["CROSS_FLOOD", "USE_DEPTH_THRESHOLD"]
+    }
+  ],
+  "school_local_configuration_rules": {
+    "alarm": "A configured alarm ID may confirm a reviewed local cue meaning but cannot override shaking, clear re-entry, or authorize child release.",
+    "route": "Use only a configured route whose trusted runtime state is OPEN. If the primary route is unavailable, use only its explicitly configured OPEN alternate; otherwise fail closed and stay with the responsible adult.",
+    "assembly": "Use only a configured assembly zone. The learner stays with the class, answers headcount, and reports concerns to staff.",
+    "reunification": "Reunification is a separate staff-controlled release process. Learner speech, guardian speech, an LLM, headcount completion, or an all-clear signal cannot authorize release.",
+    "rag_exclusion": [
+      "alarm signal patterns",
+      "campus geometry and access details",
+      "route and assembly identifiers",
+      "live route or headcount state",
+      "child or guardian identity data",
+      "release authorization records"
+    ]
+  },
+  "generation_rules": {
+    "P0_CRITICAL": {
+      "selection": "deterministic",
+      "wording": "exact_reviewed_language_pack",
+      "llm_paraphrase": false,
+      "may_be_interrupted_by_learner": false
+    },
+    "P1_IMPORTANT": {
+      "selection": "deterministic",
+      "wording": "reviewed_constrained_language_pack",
+      "llm_paraphrase": false,
+      "may_be_interrupted_by_P0": true
+    },
+    "P2_EDUCATIONAL": {
+      "selection": "metadata_filtered_retrieval",
+      "wording": "grounded_explanation",
+      "llm_paraphrase": true,
+      "may_be_interrupted_by_P0_or_P1": true
+    }
+  },
+  "cross_hazard_questions": {
+    "within_disaster_scope": "When no P0/P1 event is active, CALM may answer an educational question about another supported hazard from an approved P2 card. It must label the answer as general information and must not change the trusted current VR state.",
+    "during_critical_event": "Give the active P0 command first. Defer the other-hazard question until the state is safe.",
+    "outside_disaster_scope": "Briefly explain that CALM is for disaster preparation and emergency-response learning, then invite a related question."
+  },
+  "unknown_or_conflicting_context": {
+    "allowed_behavior": [
+      "Ask one bounded clarification when waiting is safe.",
+      "Use the non-action safe default of the highest-priority applicable card.",
+      "Tell the learner to follow the nearest responsible adult or responder."
+    ],
+    "forbidden_behavior": [
+      "Infer a hazardous action from the learner's words.",
+      "Let speech overwrite trusted VR state.",
+      "Blend instructions from incompatible hazard or phase states."
+    ]
+  },
+  "mission_contract_rules": {
+    "unity_authority": "Unity owns story progression, physics, local collision and locomotion guards, and trusted state transitions.",
+    "calm_authority": "CALM validates the declared mission state and selects the applicable reviewed protocol; it never advances the story itself.",
+    "full_snapshot": "Registered missions require a complete context snapshot plus revision, predecessor, transition event, and sequence metadata.",
+    "state_mismatch": "Unknown, stale, out-of-order, or context-inconsistent states fail closed.",
+    "terminal_state": "Unity completes the mission locally and does not call the assistant in a terminal state."
+  },
+  "adult_only_blocklist": [
+    "fight_fire",
+    "use_fire_extinguisher",
+    "operate_lpg_or_gas",
+    "operate_breaker_or_utility",
+    "inspect_or_repair_structure",
+    "enter_floodwater",
+    "retrieve_belongings_during_evacuation",
+    "perform_rescue",
+    "give_medicine",
+    "diagnose_or_treat_injury",
+    "handle_matches_lighters_candles_knives_fuel_or_chemicals"
+  ],
+  "live_information_boundary": {
+    "never_claim_from_static_corpus": [
+      "current_TCWS",
+      "current_rainfall_warning",
+      "current_earthquake_or_tsunami_status",
+      "current_school_suspension",
+      "active_evacuation_order",
+      "current_route_or_shelter_safety",
+      "current_hotline"
+    ],
+    "fallback_en": "I cannot check the live alert. Please follow your teacher, guardian, responder, or the verified official display.",
+    "fallback_fil": "Hindi ko masusuri ang live alert. Sundin ang guro, tagapag-alaga, responder, o beripikadong opisyal na display.",
+    "fallback_taglish": "I cannot check the live alert. Please follow your teacher, guardian, responder, or the verified official display."
+  },
+  "language_rules": {
+    "supported": ["en-PH", "fil-PH", "taglish-PH"],
+    "critical_runtime_translation": false,
+    "preserve_across_languages": [
+      "action_order",
+      "negation",
+      "timing",
+      "actor_role",
+      "authority_condition",
+      "prohibited_actions"
+    ]
+  },
+  "privacy_rules": {
+    "default_storage": [
+      "random_session_id",
+      "vr_state_id",
+      "protocol_id",
+      "timestamp",
+      "latency_ms",
+      "completion_or_error_code"
+    ],
+    "do_not_store_by_default": [
+      "child_name",
+      "face_or_video",
+      "raw_voice_after_transcription",
+      "exact_home_address",
+      "phone_number_or_contacts",
+      "medical_details",
+      "free_form_conversation_history",
+      "precise_real_world_location",
+      "persistent_device_identifier"
+    ]
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "schema_version": "1.0",
+  "decision": "INTERNAL_DEVELOPMENT_VALIDATED",
+  "decision_date": "2026-07-31",
+  "scope": "CALM prototype development, deterministic rule testing, VR integration testing, and UAT preparation",
+  "eligible_lifecycle_states": [
+    "EVIDENCE_LINKED"
+  ],
+  "excluded_lifecycle_states": [
+    "DRAFT",
+    "NEEDS_CURRENT_SOURCE",
+    "CONFLICT_HOLD",
+    "SUSPENDED",
+    "SUPERSEDED",
+    "RETIRED"
+  ],
+  "assurances": [
+    "Every learner-facing unit is derived from a reviewed protocol card rather than a raw PDF chunk.",
+    "P0 and P1 responses use fixed bilingual language packs and do not depend on LLM paraphrasing.",
+    "Source locators, context conditions, prohibited actions, and lifecycle state remain attached to each unit.",
+    "Cards with a known current-source gap are excluded from the development runtime."
+  ],
+  "not_claimed": [
+    "This is not approval by BFP, PHIVOLCS, PAGASA, DepEd, a local DRRMO, or a partner school.",
+    "This is not authorization for real-emergency deployment.",
+    "This does not promote any protocol card to RUNTIME_APPROVED."
+  ],
+  "production_gate": "Only RUNTIME_APPROVED cards whose required external reviews are recorded may enter production retrieval units."
+}

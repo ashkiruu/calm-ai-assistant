@@ -1,0 +1,109 @@
+{
+  "version": 2,
+  "width": 1678,
+  "height": 937,
+  "base": "robot-base.png",
+  "baseHasTransparency": false,
+  "bodyFixedAcrossFrames": true,
+  "voiceMode": "demo rhythm; optional normalized level input",
+  "frames": [
+    {
+      "name": "ready",
+      "state": "ready",
+      "time": 0.6,
+      "png": "frames/ready.png",
+      "overlay": "overlays/ready.svg"
+    },
+    {
+      "name": "blink-half",
+      "state": "blink",
+      "time": 0.04,
+      "png": "frames/blink-half.png",
+      "overlay": "overlays/blink-half.svg"
+    },
+    {
+      "name": "blink-closed",
+      "state": "blink",
+      "time": 0.1,
+      "png": "frames/blink-closed.png",
+      "overlay": "overlays/blink-closed.svg"
+    },
+    {
+      "name": "listening-1",
+      "state": "listening",
+      "time": 0.25,
+      "png": "frames/listening-1.png",
+      "overlay": "overlays/listening-1.svg"
+    },
+    {
+      "name": "listening-2",
+      "state": "listening",
+      "time": 0.65,
+      "png": "frames/listening-2.png",
+      "overlay": "overlays/listening-2.svg"
+    },
+    {
+      "name": "listening-3",
+      "state": "listening",
+      "time": 1.15,
+      "png": "frames/listening-3.png",
+      "overlay": "overlays/listening-3.svg"
+    },
+    {
+      "name": "thinking-1",
+      "state": "thinking",
+      "time": 0.4,
+      "png": "frames/thinking-1.png",
+      "overlay": "overlays/thinking-1.svg"
+    },
+    {
+      "name": "thinking-2",
+      "state": "thinking",
+      "time": 1.2,
+      "png": "frames/thinking-2.png",
+      "overlay": "overlays/thinking-2.svg"
+    },
+    {
+      "name": "thinking-3",
+      "state": "thinking",
+      "time": 2.2,
+      "png": "frames/thinking-3.png",
+      "overlay": "overlays/thinking-3.svg"
+    },
+    {
+      "name": "speaking-1",
+      "state": "speaking",
+      "time": 0.1,
+      "png": "frames/speaking-1.png",
+      "overlay": "overlays/speaking-1.svg"
+    },
+    {
+      "name": "speaking-2",
+      "state": "speaking",
+      "time": 0.3,
+      "png": "frames/speaking-2.png",
+      "overlay": "overlays/speaking-2.svg"
+    },
+    {
+      "name": "speaking-3",
+      "state": "speaking",
+      "time": 0.52,
+      "png": "frames/speaking-3.png",
+      "overlay": "overlays/speaking-3.svg"
+    },
+    {
+      "name": "needs-attention",
+      "state": "error",
+      "time": 0.6,
+      "png": "frames/needs-attention.png",
+      "overlay": "overlays/needs-attention.svg"
+    },
+    {
+      "name": "encouragement",
+      "state": "happy",
+      "time": 0.6,
+      "png": "frames/encouragement.png",
+      "overlay": "overlays/encouragement.svg"
+    }
+  ]
+}

@@ -1,0 +1,91 @@
+{
+  "schema_version": "1.0",
+  "profile_id": "CALM_DEMO_ELEMENTARY_SCHOOL",
+  "school_name": null,
+  "status": "DEMO_PLACEHOLDER_NOT_SCHOOL_APPROVED",
+  "valid_for_real_emergency": false,
+  "purpose": "VR simulation and software testing only",
+  "review": {
+    "school_drrm_approved": false,
+    "approver_role": null,
+    "reviewed_at": null,
+    "next_step": "Replace every SIM_* cue and placeholder zone with the partner school's signed DRRM plan before school deployment."
+  },
+  "alarms": [
+    {
+      "alarm_id": "SIM_EQ_SHAKING_CUE",
+      "hazard": "earthquake",
+      "phase": "during",
+      "meaning": "The VR earthquake shaking state has started.",
+      "learner_action_code": "DROP_COVER_HOLD",
+      "simulation_only": true
+    },
+    {
+      "alarm_id": "SIM_EQ_EVACUATE_CUE",
+      "hazard": "earthquake",
+      "phase": "after",
+      "meaning": "The teacher-led VR evacuation state has started after shaking stops.",
+      "learner_action_code": "SCHOOL_EVACUATE_AFTER_SHAKING",
+      "simulation_only": true
+    },
+    {
+      "alarm_id": "SIM_ALL_CLEAR_CUE",
+      "hazard": "multi_hazard",
+      "phase": "after",
+      "meaning": "The simulation controller has ended the active drill state.",
+      "learner_action_code": "WAIT_FOR_ADULT_INSTRUCTION",
+      "simulation_only": true
+    }
+  ],
+  "routes": [
+    {
+      "route_id": "ROUTE_CLASSROOM_A_PRIMARY",
+      "from_zone_id": "CLASSROOM_A",
+      "to_assembly_zone_id": "ASSEMBLY_A",
+      "status": "OPEN",
+      "alternate_route_id": "ROUTE_CLASSROOM_A_ALTERNATE",
+      "simulation_only": true
+    },
+    {
+      "route_id": "ROUTE_CLASSROOM_A_ALTERNATE",
+      "from_zone_id": "CLASSROOM_A",
+      "to_assembly_zone_id": "ASSEMBLY_A",
+      "status": "OPEN",
+      "alternate_route_id": null,
+      "simulation_only": true
+    }
+  ],
+  "assembly_areas": [
+    {
+      "zone_id": "ASSEMBLY_A",
+      "display_name": "Demo Assembly Area A",
+      "assigned_groups": ["CLASSROOM_A"],
+      "headcount_required": true,
+      "simulation_only": true
+    }
+  ],
+  "reunification": {
+    "procedure_id": "REUNIFICATION_A",
+    "zone_id": "DEMO_REUNIFICATION_GATE",
+    "starts_only_when_authorized_by": "school_incident_command",
+    "release_only_to_authorized_adult": true,
+    "verification_actor": "designated_school_staff",
+    "calm_role": "Remind the learner to stay with staff; CALM never decides or records who may collect a child.",
+    "calm_stored_fields": [
+      "random_session_id",
+      "state_id",
+      "protocol_id",
+      "completion_or_error_code"
+    ],
+    "prohibited_storage": [
+      "child_name",
+      "guardian_name",
+      "guardian_contact_details",
+      "relationship_documents",
+      "face_or_photo",
+      "signature",
+      "exact_real_world_location"
+    ],
+    "simulation_only": true
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "description": "Stable fail-closed response assertions.",
+  "expected_subset": {
+    "scenario_id": "school-earthquake-minimal",
+    "state_id": "EQ-S-H01-NO-ROUTE",
+    "protocol_id": "EQ-AFT-001",
+    "action_code": "SCHOOL_EVACUATE_AFTER_SHAKING",
+    "context_status": "valid",
+    "selected_route_id": null,
+    "safe_zone_id": null,
+    "movement_authorized": false,
+    "completion_or_error_code": "NO_APPROVED_OPEN_ROUTE",
+    "llm_used": false
+  }
+}

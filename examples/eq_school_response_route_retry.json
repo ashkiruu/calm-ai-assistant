@@ -1,0 +1,15 @@
+{
+  "description": "Stable successful route-resolution assertions.",
+  "expected_subset": {
+    "scenario_id": "school-earthquake-minimal",
+    "state_id": "EQ-S-A03",
+    "protocol_id": "EQ-AFT-001",
+    "action_code": "SCHOOL_EVACUATE_AFTER_SHAKING",
+    "context_status": "valid",
+    "selected_route_id": "ROUTE_CLASSROOM_A_ALTERNATE",
+    "safe_zone_id": "ASSEMBLY_A",
+    "movement_authorized": true,
+    "completion_or_error_code": "OK",
+    "llm_used": false
+  }
+}

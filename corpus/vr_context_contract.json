@@ -1,0 +1,109 @@
+{
+  "schema_version": "1.2",
+  "description": "Minimum trusted state contract needed to demonstrate that CALM is context-aware rather than only hazard-aware.",
+  "required_fields": {
+    "session_id": "random non-identifying string",
+    "scenario_id": "deployment-defined scenario identifier",
+    "state_id": "stable VR state identifier",
+    "hazard": ["fire", "earthquake", "typhoon"],
+    "phase": ["before", "during", "after"],
+    "setting": ["home", "school", "outdoor"],
+    "location_type": ["indoors", "outdoor"],
+    "location_zone": "deployment-approved VR zone identifier",
+    "learner_action": "latest classified VR action",
+    "hazard_active": "boolean",
+    "safe_route_id": "approved route identifier or null",
+    "safe_zone_id": "approved zone identifier or null",
+    "responsible_adult_present": "boolean",
+    "timestamp": "ISO-8601"
+  },
+  "mission_envelope_fields": {
+    "mission_revision": "semantic version pinned by Unity and the CALM mission contract",
+    "state_seq": "positive integer for the entered state",
+    "previous_state_seq": "the immediately preceding nonnegative sequence number",
+    "previous_state_id": "declared predecessor state ID, or null for the initial state",
+    "transition_event": "trusted Unity event naming the declared transition",
+    "context_contract_version": "version of this complete context envelope",
+    "school_profile_id": "version-controlled deployment profile identifier",
+    "route_snapshot_id": "opaque trusted snapshot identifier when route state is used"
+  },
+  "optional_school_runtime_fields": {
+    "alarm_id": "configured opaque alarm identifier or null; never inferred from speech",
+    "route_states": "map of configured route IDs to OPEN, BLOCKED, CLOSED, or UNKNOWN from the trusted scenario controller",
+    "blocked_route_ids": "compatibility list of configured route IDs marked blocked by the trusted scenario controller",
+    "at_assembly_area": "boolean",
+    "headcount_active": "boolean",
+    "reunification_authorized": "authenticated boolean supplied by the school release process; never by the learner or LLM"
+  },
+  "conditional_fields": {
+    "fire": [
+      "fire_or_smoke_confirmed",
+      "smoke_present",
+      "safe_exit_available",
+      "door_hot_or_smoke_leaking",
+      "no_safe_exit_available",
+      "learner_clothing_on_fire",
+      "reentry_not_cleared"
+    ],
+    "earthquake": [
+      "shaking_active",
+      "aftershock_active",
+      "approved_cover_reachable",
+      "learner_heading_to_exit",
+      "near_falling_or_glass_hazard",
+      "structure_damaged_or_not_cleared",
+      "teacher_evacuate_instruction",
+      "injury_or_missing_person_known",
+      "at_assembly_area",
+      "headcount_active",
+      "unsafe_object_visible",
+      "learner_attempting_reentry",
+      "injury_or_missing_person_report_pending",
+      "coastal_risk_state"
+    ],
+    "typhoon": [
+      "authenticated_evacuation_order",
+      "current_shelter_approved",
+      "trusted_safe_route_available",
+      "floodwater_present",
+      "rising_water_present",
+      "official_clearance_received",
+      "downed_line_or_wet_electrical_hazard"
+    ]
+  },
+  "state_authority": {
+    "trusted": [
+      "Unity scenario controller",
+      "reviewed deployment configuration",
+      "authenticated authority adapter"
+    ],
+    "untrusted_for_state_override": [
+      "speech transcript",
+      "learner assertion",
+      "LLM inference",
+      "retrieved document text"
+    ]
+  },
+  "earthquake_field_meanings": {
+    "unsafe_object_visible": "trusted scene flag for a visible preparation hazard; the learner must report it and never repair it",
+    "learner_attempting_reentry": "trusted Unity action flag; a damaged or uncleared structure alone does not mean the learner is attempting re-entry",
+    "injury_or_missing_person_known": "a fictional scenario concern is known",
+    "injury_or_missing_person_report_pending": "the known concern still needs to be handed to the responsible adult; clear this after the report without erasing the factual concern"
+  },
+  "mission_runtime_rules": {
+    "full_snapshot_not_delta": "Unity sends the complete trusted context on every request; omitted fields fail closed.",
+    "declared_state": "A registered mission rejects unknown state IDs, wrong phase or zone values, and transitions absent from its state graph.",
+    "sequence": "state_seq must equal previous_state_seq plus one inside the signed mission envelope. Unity also rejects stale API responses against its current state_seq.",
+    "terminal": "The mission terminal state is Unity-owned and does not call the assistant endpoint.",
+    "local_safety": "Unity collision, locomotion, route, and hazard guards stay active even if CALM or TTS is unavailable."
+  },
+  "school_local_boundary": {
+    "configuration_source": "A versioned school profile reviewed by the school head and DRRM coordinator; synthetic SIM_* values are for VR development only.",
+    "alarms": "Map a recognized local cue ID to a reviewed meaning and learner action. An alarm never clears re-entry or authorizes child release by itself.",
+    "routes": "Identify only school-approved paths between configured zones. A blocked, closed, unknown, missing, or mismatched route fails closed and CALM never invents another path.",
+    "assembly_areas": "Identify where the class stays for immediate accountability and headcount after evacuation.",
+    "reunification": "A separate controlled release process in which designated staff verify an authorized adult. CALM only tells the learner to remain with staff and stores no guardian identity data.",
+    "rag_rule": "Alarm patterns, campus geometry, routes, live route status, headcount/rosters, and reunification identity data are deterministic configuration/state and must never enter embeddings or generative prompts."
+  },
+  "context_awareness_acceptance_test": "For the same learner question and same hazard, changing phase, setting, location, observed action, or authority state must select a different applicable protocol when safety meaning differs. If outputs remain hazard-generic or contradict the changed state, the claim is falsified."
+}

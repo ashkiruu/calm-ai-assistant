@@ -1,0 +1,259 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://calm.local/schemas/protocol-card-1.0.json",
+  "title": "CALM protocol card",
+  "type": "object",
+  "required": [
+    "protocol_id",
+    "schema_version",
+    "revision",
+    "action_code",
+    "title",
+    "classification",
+    "applicability",
+    "approved_semantics",
+    "deterministic_safety",
+    "language_pack",
+    "provenance",
+    "review"
+  ],
+  "properties": {
+    "protocol_id": {"type": "string", "pattern": "^[A-Z0-9-]+$"},
+    "schema_version": {"const": "1.0"},
+    "revision": {"type": "integer", "minimum": 1},
+    "action_code": {"type": "string", "pattern": "^[A-Z0-9_]+$"},
+    "title": {"type": "string", "minLength": 3},
+    "classification": {
+      "type": "object",
+      "required": [
+        "hazard",
+        "settings",
+        "phase",
+        "actor_role",
+        "age_band",
+        "jurisdiction"
+      ],
+      "properties": {
+        "hazard": {
+          "enum": ["fire", "earthquake", "typhoon"]
+        },
+        "secondary_hazards": {
+          "type": "array",
+          "items": {"type": "string"},
+          "uniqueItems": true
+        },
+        "settings": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"enum": ["home", "school", "outdoor"]}
+        },
+        "phase": {"enum": ["before", "during", "after"]},
+        "actor_role": {"const": "learner"},
+        "age_band": {"const": "grades_3_to_6"},
+        "jurisdiction": {"const": "PH"}
+      },
+      "additionalProperties": false
+    },
+    "applicability": {
+      "type": "object",
+      "required": [
+        "required_context",
+        "excluded_context",
+        "trigger_events",
+        "context_sources"
+      ],
+      "properties": {
+        "required_context": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "string"}
+        },
+        "excluded_context": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "trigger_events": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "string"}
+        },
+        "context_sources": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "enum": [
+              "trusted_vr_state",
+              "authenticated_authority_state",
+              "learner_question"
+            ]
+          },
+          "uniqueItems": true
+        },
+        "clarification_if": {
+          "type": "array",
+          "items": {"type": "string"}
+        }
+      },
+      "additionalProperties": false
+    },
+    "approved_semantics": {
+      "type": "object",
+      "required": [
+        "objective",
+        "ordered_actions",
+        "prohibited_actions",
+        "adult_handoff"
+      ],
+      "properties": {
+        "objective": {"type": "string", "minLength": 3},
+        "ordered_actions": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "string"}
+        },
+        "prohibited_actions": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "adult_handoff": {"type": "string"},
+        "rationale": {"type": "string"}
+      },
+      "additionalProperties": false
+    },
+    "deterministic_safety": {
+      "type": "object",
+      "required": [
+        "criticality",
+        "hard_guard",
+        "priority",
+        "generation_mode",
+        "safe_default",
+        "blocks_action_codes"
+      ],
+      "properties": {
+        "criticality": {
+          "enum": ["P0_CRITICAL", "P1_IMPORTANT", "P2_EDUCATIONAL"]
+        },
+        "hard_guard": {"type": "boolean"},
+        "priority": {"type": "integer", "minimum": 1, "maximum": 100},
+        "generation_mode": {
+          "enum": [
+            "EXACT_APPROVED_TEXT",
+            "CONSTRAINED_APPROVED_TEXT",
+            "GROUNDED_EXPLANATION"
+          ]
+        },
+        "safe_default": {"type": "string", "minLength": 1},
+        "blocks_action_codes": {
+          "type": "array",
+          "items": {"type": "string"},
+          "uniqueItems": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "language_pack": {
+      "type": "object",
+      "required": ["en-PH", "fil-PH", "taglish-PH"],
+      "properties": {
+        "en-PH": {"$ref": "#/$defs/language"},
+        "fil-PH": {"$ref": "#/$defs/language"},
+        "taglish-PH": {"$ref": "#/$defs/language"}
+      },
+      "additionalProperties": false
+    },
+    "provenance": {
+      "type": "object",
+      "required": ["source_claims", "conflict_ids"],
+      "properties": {
+        "source_claims": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["source_id", "locator", "disposition"],
+            "properties": {
+              "source_id": {"type": "string"},
+              "locator": {"type": "string", "minLength": 1},
+              "pages": {
+                "type": "array",
+                "items": {"type": "integer", "minimum": 1}
+              },
+              "disposition": {
+                "enum": [
+                  "KEEP_EXACT",
+                  "SIMPLIFY",
+                  "ADULT_ONLY",
+                  "BACKGROUND_ONLY",
+                  "CONFLICT_REVIEW"
+                ]
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "conflict_ids": {
+          "type": "array",
+          "items": {"type": "string"},
+          "uniqueItems": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "review": {
+      "type": "object",
+      "required": [
+        "lifecycle_state",
+        "required_approvals",
+        "completed_approvals"
+      ],
+      "properties": {
+        "lifecycle_state": {
+          "enum": [
+            "DRAFT",
+            "EVIDENCE_LINKED",
+            "ROLE_CONTEXT_CLASSIFIED",
+            "DOMAIN_APPROVED",
+            "CHILD_SAFETY_APPROVED",
+            "LANGUAGE_EQUIVALENCE_APPROVED",
+            "VR_RULE_TESTED",
+            "PILOT_APPROVED",
+            "RUNTIME_APPROVED",
+            "CONFLICT_HOLD",
+            "NEEDS_CURRENT_SOURCE",
+            "SUSPENDED",
+            "SUPERSEDED",
+            "RETIRED"
+          ]
+        },
+        "required_approvals": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "string"},
+          "uniqueItems": true
+        },
+        "completed_approvals": {
+          "type": "array",
+          "items": {"type": "string"},
+          "uniqueItems": true
+        },
+        "review_notes": {"type": "string"}
+      },
+      "additionalProperties": false
+    }
+  },
+  "$defs": {
+    "language": {
+      "type": "object",
+      "required": ["short_command", "instruction", "tts_text"],
+      "properties": {
+        "short_command": {"type": "string", "minLength": 1},
+        "instruction": {"type": "string", "minLength": 1},
+        "tts_text": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

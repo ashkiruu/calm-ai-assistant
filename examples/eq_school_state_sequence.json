@@ -1,0 +1,36 @@
+{
+  "artifact": "CALM EQ School Unity state-sequence index",
+  "artifact_version": "1.0.0",
+  "status": "DEVELOPMENT_ONLY_NOT_FOR_REAL_EMERGENCIES",
+  "authoritative_contract": "config/missions/school_earthquake.v1.json",
+  "api_version": "0.3.0",
+  "context_contract_version": "1.2",
+  "mission_id": "school-earthquake-minimal",
+  "mission_revision": "1.0.0",
+  "school_profile_id": "CALM_DEMO_ELEMENTARY_SCHOOL",
+  "main_path": [
+    "EQ-S-B01",
+    "EQ-S-B02",
+    "EQ-S-B03",
+    "EQ-S-D01",
+    "EQ-S-D04",
+    "EQ-S-A01",
+    "EQ-S-A02",
+    "EQ-S-A03",
+    "EQ-S-A04",
+    "EQ-S-A05",
+    "EQ-S-A06",
+    "EQ-S-A04R",
+    "EQ-S-A07",
+    "EQ-S-END"
+  ],
+  "correction_states": {
+    "EQ-S-D02": "Run-to-exit correction; returns to EQ-S-D04",
+    "EQ-S-D03": "Glass or shelf correction; returns to EQ-S-D04"
+  },
+  "safe_hold_state": {
+    "EQ-S-H01-NO-ROUTE": "No approved route is open; movement stays locked until a trusted route update returns to EQ-S-A02 or EQ-S-A03"
+  },
+  "terminal_rule": "EQ-S-END is Unity-owned and must not call POST /api/v1/respond.",
+  "runtime_rule": "Unity fetches the full contract from GET /api/v1/missions/school-earthquake-minimal and sends a complete trusted context snapshot, never a delta."
+}

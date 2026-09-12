@@ -1,0 +1,1545 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="CALM context-aware API verification console">
+    <title>CALM Mission Control</title>
+    <style>
+        :root {
+            --ink: #071c2c;
+            --ink-soft: #17384b;
+            --paper: #f7fbfb;
+            --canvas: #dce8e9;
+            --line: #adc3c6;
+            --line-dark: #385b6a;
+            --amber: #f4b942;
+            --amber-pale: #fff0c9;
+            --teal: #087f78;
+            --teal-pale: #d6f0ed;
+            --red: #b83c38;
+            --red-pale: #f9dddd;
+            --muted: #5c747e;
+            --shadow: 0 14px 40px rgba(7, 28, 44, 0.12);
+            --display: Bahnschrift, "Arial Narrow", Arial, sans-serif;
+            --body: Aptos, "Segoe UI", Arial, sans-serif;
+            --mono: "Cascadia Code", Consolas, monospace;
+        }
+
+        * { box-sizing: border-box; }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            color: var(--ink);
+            background-color: var(--canvas);
+            background-image:
+                linear-gradient(rgba(56, 91, 106, 0.09) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(56, 91, 106, 0.09) 1px, transparent 1px);
+            background-size: 32px 32px;
+            font-family: var(--body);
+        }
+
+        button, textarea, select { font: inherit; }
+
+        button, select { cursor: pointer; }
+
+        button:focus-visible,
+        textarea:focus-visible,
+        select:focus-visible,
+        a:focus-visible {
+            outline: 3px solid var(--amber);
+            outline-offset: 3px;
+        }
+
+        .skip-link {
+            position: fixed;
+            z-index: 100;
+            top: 10px;
+            left: 10px;
+            padding: 10px 14px;
+            color: white;
+            background: var(--ink);
+            transform: translateY(-160%);
+        }
+
+        .skip-link:focus { transform: translateY(0); }
+
+        .shell {
+            width: min(1500px, calc(100% - 32px));
+            margin: 16px auto 48px;
+        }
+
+        .masthead {
+            position: relative;
+            overflow: hidden;
+            display: grid;
+            grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.65fr);
+            min-height: 260px;
+            color: white;
+            background: var(--ink);
+            border: 1px solid var(--ink);
+            box-shadow: var(--shadow);
+        }
+
+        .masthead-copy {
+            position: relative;
+            z-index: 1;
+            padding: clamp(28px, 5vw, 64px);
+        }
+
+        .eyebrow,
+        .section-label,
+        .field-label,
+        .metric-label {
+            font-family: var(--mono);
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.11em;
+            line-height: 1.4;
+            text-transform: uppercase;
+        }
+
+        .eyebrow { color: var(--amber); }
+
+        h1 {
+            max-width: 780px;
+            margin: 14px 0 16px;
+            font-family: var(--display);
+            font-size: clamp(2.7rem, 6vw, 6.3rem);
+            font-stretch: condensed;
+            font-weight: 800;
+            letter-spacing: -0.055em;
+            line-height: 0.88;
+        }
+
+        .masthead-copy p {
+            max-width: 720px;
+            margin: 0;
+            color: #c8dadd;
+            font-size: clamp(1rem, 1.4vw, 1.2rem);
+            line-height: 1.55;
+        }
+
+        .signal-panel {
+            position: relative;
+            display: grid;
+            align-content: center;
+            min-height: 230px;
+            padding: 30px;
+            border-left: 1px solid var(--line-dark);
+            background: #0d2a3c;
+        }
+
+        .signal-panel svg {
+            width: 100%;
+            height: 118px;
+            overflow: visible;
+        }
+
+        .signal-grid line { stroke: #27495a; stroke-width: 1; }
+        .signal-path {
+            fill: none;
+            stroke: var(--amber);
+            stroke-linecap: square;
+            stroke-linejoin: miter;
+            stroke-width: 4;
+            vector-effect: non-scaling-stroke;
+            stroke-dasharray: 520;
+            animation: trace 1.4s ease-out both;
+        }
+
+        @keyframes trace {
+            from { stroke-dashoffset: 520; }
+            to { stroke-dashoffset: 0; }
+        }
+
+        .signal-caption {
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+            margin-top: 16px;
+            color: #a9c2c8;
+            font-family: var(--mono);
+            font-size: 0.72rem;
+            text-transform: uppercase;
+        }
+
+        .status-strip {
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            align-items: center;
+            gap: 18px;
+            padding: 13px 18px;
+            color: white;
+            background: var(--ink-soft);
+            border: 1px solid var(--ink);
+            border-top: 0;
+        }
+
+        .connection {
+            display: inline-flex;
+            align-items: center;
+            gap: 9px;
+            font-family: var(--mono);
+            font-size: 0.78rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .connection-dot {
+            width: 10px;
+            height: 10px;
+            border: 2px solid white;
+            border-radius: 50%;
+            background: var(--amber);
+        }
+
+        .connection-dot.online { background: #42d3bd; }
+        .connection-dot.offline { background: #ef7770; }
+
+        .connection-detail {
+            overflow: hidden;
+            color: #c8dadd;
+            font-size: 0.9rem;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .status-strip a {
+            color: white;
+            font-family: var(--mono);
+            font-size: 0.77rem;
+            font-weight: 700;
+            text-decoration-color: var(--amber);
+            text-underline-offset: 4px;
+        }
+
+        .development-notice {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 14px;
+            align-items: start;
+            margin: 18px 0;
+            padding: 15px 18px;
+            background: var(--amber-pale);
+            border: 1px solid #c88b17;
+            border-left-width: 8px;
+        }
+
+        .notice-mark {
+            display: grid;
+            place-items: center;
+            width: 28px;
+            height: 28px;
+            color: var(--ink);
+            border: 2px solid var(--ink);
+            border-radius: 50%;
+            font-family: var(--mono);
+            font-weight: 800;
+        }
+
+        .development-notice strong { display: block; margin-bottom: 4px; }
+        .development-notice p { margin: 0; color: #5c471a; line-height: 1.45; }
+
+        .workspace {
+            display: grid;
+            grid-template-columns: minmax(235px, 0.72fr) minmax(420px, 1.55fr) minmax(290px, 0.9fr);
+            align-items: start;
+            border: 1px solid var(--line-dark);
+            box-shadow: var(--shadow);
+        }
+
+        .state-rail,
+        .console,
+        .audit-panel { min-width: 0; min-height: 760px; }
+
+        .state-rail {
+            color: white;
+            background: var(--ink);
+            border-right: 1px solid var(--line-dark);
+        }
+
+        .panel-head {
+            padding: 22px 22px 18px;
+            border-bottom: 1px solid var(--line-dark);
+        }
+
+        .state-rail .section-label { color: var(--amber); }
+
+        .panel-head h2,
+        .console-head h2,
+        .suite-head h2 {
+            margin: 6px 0 0;
+            font-family: var(--display);
+            font-size: 1.6rem;
+            letter-spacing: -0.02em;
+        }
+
+        .state-list { display: grid; }
+
+        .state-button {
+            position: relative;
+            display: grid;
+            grid-template-columns: 34px 1fr;
+            gap: 12px;
+            width: 100%;
+            padding: 16px 18px;
+            color: #c8dadd;
+            text-align: left;
+            background: transparent;
+            border: 0;
+            border-bottom: 1px solid #214253;
+        }
+
+        .state-button:hover { color: white; background: #102f42; }
+
+        .state-button.active {
+            color: var(--ink);
+            background: var(--amber);
+        }
+
+        .state-number {
+            padding-top: 2px;
+            font-family: var(--mono);
+            font-size: 0.8rem;
+            font-weight: 800;
+        }
+
+        .state-name {
+            display: block;
+            color: inherit;
+            font-weight: 750;
+            line-height: 1.25;
+        }
+
+        .state-description {
+            display: block;
+            margin-top: 5px;
+            color: #87a7b1;
+            font-size: 0.79rem;
+            line-height: 1.35;
+        }
+
+        .state-button.active .state-description { color: #4c471d; }
+
+        .state-protocol {
+            display: block;
+            margin-top: 7px;
+            font-family: var(--mono);
+            font-size: 0.68rem;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+        }
+
+        .console { background: var(--paper); }
+
+        .console-head {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            align-items: start;
+            padding: 22px 26px 20px;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .mode-chip,
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            min-height: 27px;
+            padding: 5px 9px;
+            border: 1px solid currentColor;
+            font-family: var(--mono);
+            font-size: 0.67rem;
+            font-weight: 800;
+            letter-spacing: 0.04em;
+            line-height: 1;
+            text-transform: uppercase;
+        }
+
+        .mode-chip { color: var(--teal); background: var(--teal-pale); }
+
+        .question-block { padding: 24px 26px; border-bottom: 1px solid var(--line); }
+
+        .question-meta {
+            display: grid;
+            grid-template-columns: 1fr 170px;
+            gap: 14px;
+            align-items: end;
+            margin-bottom: 10px;
+        }
+
+        label { display: block; }
+        .field-label { display: block; margin-bottom: 7px; color: var(--muted); }
+
+        select,
+        textarea {
+            width: 100%;
+            color: var(--ink);
+            background: white;
+            border: 1px solid #809ba2;
+            border-radius: 0;
+        }
+
+        select { min-height: 44px; padding: 9px 36px 9px 12px; }
+
+        #questionInput {
+            min-height: 104px;
+            padding: 15px;
+            resize: vertical;
+            font-size: 1.1rem;
+            font-weight: 600;
+            line-height: 1.5;
+        }
+
+        .action-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        .primary-button,
+        .secondary-button,
+        .quiet-button {
+            min-height: 44px;
+            padding: 10px 15px;
+            border-radius: 0;
+            font-weight: 750;
+        }
+
+        .primary-button {
+            color: var(--ink);
+            background: var(--amber);
+            border: 2px solid var(--ink);
+            box-shadow: 4px 4px 0 var(--ink);
+        }
+
+        .primary-button:hover { transform: translate(1px, 1px); box-shadow: 3px 3px 0 var(--ink); }
+        .primary-button:disabled { cursor: wait; opacity: 0.58; }
+
+        .secondary-button {
+            color: white;
+            background: var(--ink-soft);
+            border: 1px solid var(--ink-soft);
+        }
+
+        .quiet-button {
+            color: var(--ink);
+            background: transparent;
+            border: 1px solid var(--line-dark);
+        }
+
+        .expected-strip {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 11px 26px;
+            color: #3c5963;
+            background: #edf4f4;
+            border-bottom: 1px solid var(--line);
+            font-family: var(--mono);
+            font-size: 0.76rem;
+        }
+
+        .expected-strip strong { color: var(--ink); }
+
+        .response-card {
+            min-height: 270px;
+            padding: 28px 26px 24px;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .response-topline {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .response-badges { display: flex; flex-wrap: wrap; gap: 7px; }
+        .badge.neutral { color: var(--muted); background: white; }
+        .badge.critical { color: var(--red); background: var(--red-pale); }
+        .badge.important { color: #745209; background: var(--amber-pale); }
+        .badge.educational { color: var(--teal); background: var(--teal-pale); }
+        .badge.pass { color: var(--teal); background: var(--teal-pale); }
+        .badge.fail { color: var(--red); background: var(--red-pale); }
+
+        .response-text {
+            max-width: 800px;
+            margin: 28px 0 22px;
+            font-family: var(--display);
+            font-size: clamp(1.65rem, 3.1vw, 3rem);
+            font-weight: 760;
+            letter-spacing: -0.035em;
+            line-height: 1.08;
+        }
+
+        .response-text.placeholder { color: #81989e; }
+
+        .response-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
+        .context-details { padding: 18px 26px 24px; }
+
+        summary {
+            cursor: pointer;
+            font-weight: 750;
+        }
+
+        .context-help { margin: 10px 0; color: var(--muted); font-size: 0.9rem; line-height: 1.45; }
+
+        #contextEditor {
+            min-height: 310px;
+            padding: 14px;
+            resize: vertical;
+            font-family: var(--mono);
+            font-size: 0.76rem;
+            line-height: 1.5;
+            tab-size: 2;
+        }
+
+        .audit-panel { background: #eaf1f1; border-left: 1px solid var(--line-dark); }
+        .audit-panel .panel-head { border-color: var(--line); }
+
+        .audit-section { padding: 19px 20px; border-bottom: 1px solid var(--line); }
+        .audit-section h3 { margin: 0 0 13px; font-family: var(--display); font-size: 1rem; }
+
+        .metric-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+        .metric {
+            min-width: 0;
+            padding: 10px;
+            background: white;
+            border: 1px solid var(--line);
+        }
+
+        .metric-label { display: block; color: var(--muted); font-size: 0.61rem; }
+        .metric-value {
+            display: block;
+            overflow-wrap: anywhere;
+            margin-top: 5px;
+            font-family: var(--mono);
+            font-size: 0.78rem;
+            font-weight: 750;
+        }
+
+        .trace-list,
+        .source-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+
+        .trace-list li,
+        .source-list li {
+            padding: 9px 10px;
+            color: #35525d;
+            background: white;
+            border-left: 3px solid var(--teal);
+            font-family: var(--mono);
+            font-size: 0.7rem;
+            line-height: 1.45;
+            overflow-wrap: anywhere;
+        }
+
+        .empty-note { margin: 0; color: var(--muted); font-size: 0.85rem; line-height: 1.4; }
+
+        #rawResponse {
+            max-height: 280px;
+            overflow: auto;
+            margin: 10px 0 0;
+            padding: 12px;
+            color: #d9e7e9;
+            background: var(--ink);
+            font-family: var(--mono);
+            font-size: 0.69rem;
+            line-height: 1.45;
+            white-space: pre-wrap;
+        }
+
+        .suite {
+            margin-top: 18px;
+            background: var(--paper);
+            border: 1px solid var(--line-dark);
+            box-shadow: var(--shadow);
+        }
+
+        .suite-head {
+            display: flex;
+            justify-content: space-between;
+            gap: 18px;
+            align-items: end;
+            padding: 22px 24px;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .suite-head p { max-width: 650px; margin: 7px 0 0; color: var(--muted); line-height: 1.45; }
+        .suite-actions { display: flex; align-items: center; gap: 12px; }
+        .suite-summary { font-family: var(--mono); font-size: 0.78rem; font-weight: 750; }
+
+        .table-wrap { overflow-x: auto; }
+
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 12px 14px; text-align: left; border-bottom: 1px solid var(--line); }
+        th {
+            color: var(--muted);
+            background: #eaf1f1;
+            font-family: var(--mono);
+            font-size: 0.66rem;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+        td { font-size: 0.86rem; }
+        td.code { font-family: var(--mono); font-size: 0.74rem; }
+
+        .empty-row td { padding: 28px; color: var(--muted); text-align: center; }
+
+        footer {
+            display: flex;
+            justify-content: space-between;
+            gap: 18px;
+            padding: 18px 2px 0;
+            color: #3d5c66;
+            font-size: 0.82rem;
+        }
+
+        footer code { font-family: var(--mono); }
+
+        .toast {
+            position: fixed;
+            z-index: 90;
+            right: 22px;
+            bottom: 22px;
+            max-width: min(390px, calc(100% - 44px));
+            padding: 13px 16px;
+            color: white;
+            background: var(--ink);
+            border-left: 5px solid var(--amber);
+            box-shadow: var(--shadow);
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(12px);
+            transition: opacity 160ms ease, transform 160ms ease;
+        }
+
+        .toast.show { opacity: 1; transform: translateY(0); }
+        .toast.error { border-left-color: #ef7770; }
+
+        @media (max-width: 1120px) {
+            .workspace { grid-template-columns: 250px minmax(0, 1fr); }
+            .audit-panel { grid-column: 1 / -1; min-height: auto; border-top: 1px solid var(--line-dark); border-left: 0; }
+            .audit-panel { display: grid; grid-template-columns: repeat(3, 1fr); }
+            .audit-panel .panel-head { grid-column: 1 / -1; }
+            .state-rail, .console { min-height: 720px; }
+        }
+
+        @media (max-width: 760px) {
+            .shell { width: min(100% - 18px, 1500px); margin-top: 9px; }
+            .masthead { grid-template-columns: 1fr; }
+            .signal-panel { min-height: 190px; border-top: 1px solid var(--line-dark); border-left: 0; }
+            .status-strip { grid-template-columns: 1fr auto; }
+            .connection-detail { grid-column: 1 / -1; grid-row: 2; white-space: normal; }
+            .workspace { grid-template-columns: 1fr; }
+            .state-rail, .console, .audit-panel { min-height: auto; }
+            .state-rail { border-right: 0; }
+            .state-list { grid-template-columns: 1fr 1fr; }
+            .state-button { min-height: 145px; border-right: 1px solid #214253; }
+            .audit-panel { grid-template-columns: 1fr; }
+            .question-meta { grid-template-columns: 1fr; }
+            .console-head, .suite-head { align-items: start; flex-direction: column; }
+            .suite-head { display: flex; }
+            .suite-actions { width: 100%; justify-content: space-between; }
+            footer { flex-direction: column; }
+        }
+
+        @media (max-width: 480px) {
+            h1 { font-size: 2.65rem; }
+            .masthead-copy, .signal-panel { padding: 26px 20px; }
+            .state-list { grid-template-columns: 1fr; }
+            .state-button { min-height: auto; }
+            .console-head, .question-block, .response-card, .context-details { padding-left: 18px; padding-right: 18px; }
+            .metric-grid { grid-template-columns: 1fr; }
+            .action-row > button { flex: 1 1 auto; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                scroll-behavior: auto !important;
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <a class="skip-link" href="#missionConsole">Skip to mission console</a>
+
+    <div class="shell">
+        <header class="masthead">
+            <div class="masthead-copy">
+                <div class="eyebrow">CALM / context verification rig</div>
+                <h1>Hold the question.<br>Change the world state.</h1>
+                <p>
+                    Prove context awareness before Unity integration. The learner can ask the
+                    same thing while trusted state changes—and CALM must select the right
+                    protocol without letting speech rewrite the emergency.
+                </p>
+            </div>
+            <div class="signal-panel" aria-label="Stylized earthquake state signal">
+                <svg viewBox="0 0 520 120" role="img" aria-label="A calm line becoming an earthquake trace and returning to calm">
+                    <g class="signal-grid">
+                        <line x1="0" y1="20" x2="520" y2="20"></line>
+                        <line x1="0" y1="60" x2="520" y2="60"></line>
+                        <line x1="0" y1="100" x2="520" y2="100"></line>
+                    </g>
+                    <path class="signal-path" d="M0 61 L70 61 L94 58 L110 65 L126 45 L141 83 L158 20 L178 103 L197 36 L217 77 L238 49 L255 68 L280 56 L302 63 L338 61 L390 61 L520 61"></path>
+                </svg>
+                <div class="signal-caption">
+                    <span>Trusted state in</span>
+                    <span>Deterministic action out</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="status-strip" aria-live="polite">
+            <div class="connection">
+                <span class="connection-dot" id="connectionDot"></span>
+                <span id="connectionLabel">Checking API</span>
+            </div>
+            <div class="connection-detail" id="connectionDetail">Contacting /health…</div>
+            <a href="/simulation">Open classroom preview</a>
+            <a href="/docs" target="_blank" rel="noreferrer">Open API docs</a>
+        </div>
+
+        <section class="development-notice" aria-label="Development status">
+            <div class="notice-mark">!</div>
+            <div>
+                <strong>Development simulation—not a real school procedure.</strong>
+                <p>
+                    The corpus is internally validated for engineering, but the route, alarm,
+                    assembly, and reunification values below are synthetic. Production remains
+                    blocked until school and external reviews are recorded.
+                </p>
+            </div>
+        </section>
+
+        <main class="workspace" id="missionConsole">
+            <aside class="state-rail" aria-label="Trusted VR state presets">
+                <div class="panel-head">
+                    <div class="section-label">01 / Trusted state</div>
+                    <h2>Executable mission states</h2>
+                </div>
+                <div class="state-list" id="scenarioList"></div>
+            </aside>
+
+            <section class="console">
+                <div class="console-head">
+                    <div>
+                        <div class="section-label">02 / Learner channel</div>
+                        <h2>Ask against this state</h2>
+                    </div>
+                    <div class="mode-chip">Text path · no Whisper load</div>
+                </div>
+
+                <div class="question-block">
+                    <div class="question-meta">
+                        <label>
+                            <span class="field-label">Learner question</span>
+                            <span class="empty-note">Speech becomes this text only; it never becomes trusted state.</span>
+                        </label>
+                        <label for="localeSelect">
+                            <span class="field-label">Language pack</span>
+                            <select id="localeSelect">
+                                <option value="en-PH">English (PH)</option>
+                                <option value="fil-PH">Filipino</option>
+                                <option value="taglish-PH">Taglish</option>
+                            </select>
+                        </label>
+                    </div>
+                    <textarea id="questionInput" aria-label="Learner question">What should I do?</textarea>
+                    <div class="action-row">
+                        <button class="primary-button" id="sendButton" type="button">Ask CALM</button>
+                        <button class="secondary-button" id="runSuiteButton" type="button">Verify all states</button>
+                        <button class="quiet-button" id="resetButton" type="button">Reset state JSON</button>
+                    </div>
+                </div>
+
+                <div class="expected-strip">
+                    <span>Selected preset: <strong id="selectedStateName">—</strong></span>
+                    <span>Expected: <strong id="expectedProtocol">—</strong></span>
+                </div>
+
+                <article class="response-card" aria-live="polite" aria-busy="false" id="responseCard">
+                    <div class="response-topline">
+                        <div class="section-label">03 / Learner-safe output</div>
+                        <div class="response-badges">
+                            <span class="badge neutral" id="protocolBadge">No response</span>
+                            <span class="badge neutral" id="criticalityBadge">Waiting</span>
+                            <span class="badge neutral" id="matchBadge">Not tested</span>
+                        </div>
+                    </div>
+                    <p class="response-text placeholder" id="responseText">
+                        Choose a state, keep or change the question, then ask CALM.
+                    </p>
+                    <div class="response-actions">
+                        <button class="quiet-button" id="speakButton" type="button" disabled>Play response</button>
+                        <button class="quiet-button" id="copyButton" type="button" disabled>Copy response</button>
+                    </div>
+                </article>
+
+                <details class="context-details">
+                    <summary>Edit the trusted context JSON</summary>
+                    <p class="context-help">
+                        This is the complete envelope Unity will send. Change a field to test a
+                        contract mismatch, blocked route, or stale transition. The browser only
+                        refreshes the timestamp; it never repairs the trusted state for you.
+                    </p>
+                    <textarea id="contextEditor" spellcheck="false" aria-label="Trusted context JSON"></textarea>
+                </details>
+            </section>
+
+            <aside class="audit-panel" aria-label="Decision audit">
+                <div class="panel-head">
+                    <div class="section-label">04 / Decision audit</div>
+                    <h2>Why this answer?</h2>
+                </div>
+
+                <section class="audit-section">
+                    <h3>Decision fields</h3>
+                    <div class="metric-grid">
+                        <div class="metric"><span class="metric-label">Action</span><span class="metric-value" id="actionValue">—</span></div>
+                        <div class="metric"><span class="metric-label">Completion</span><span class="metric-value" id="completionValue">—</span></div>
+                        <div class="metric"><span class="metric-label">Route</span><span class="metric-value" id="routeValue">—</span></div>
+                        <div class="metric"><span class="metric-label">Assembly</span><span class="metric-value" id="zoneValue">—</span></div>
+                        <div class="metric"><span class="metric-label">Movement</span><span class="metric-value" id="movementValue">—</span></div>
+                        <div class="metric"><span class="metric-label">LLM used</span><span class="metric-value" id="llmValue">—</span></div>
+                        <div class="metric"><span class="metric-label">Corpus gate</span><span class="metric-value" id="corpusValue">—</span></div>
+                        <div class="metric"><span class="metric-label">Latency</span><span class="metric-value" id="latencyValue">—</span></div>
+                    </div>
+                </section>
+
+                <section class="audit-section">
+                    <h3>Decision trace</h3>
+                    <ul class="trace-list" id="traceList"><li>No decision yet.</li></ul>
+                </section>
+
+                <section class="audit-section">
+                    <h3>Evidence references</h3>
+                    <ul class="source-list" id="sourceList"><li>No evidence selected yet.</li></ul>
+                </section>
+
+                <section class="audit-section">
+                    <details>
+                        <summary>Raw API response</summary>
+                        <pre id="rawResponse">{}</pre>
+                    </details>
+                </section>
+            </aside>
+        </main>
+
+        <section class="suite" id="suiteSection">
+            <div class="suite-head">
+                <div>
+                    <div class="section-label">05 / Context-awareness proof</div>
+                    <h2>Independent state verification matrix</h2>
+                    <p>
+                        This checks each callable state as an independent contract case using the
+                        fixed question “What should I do?”. A full pass means CALM accepted the
+                        state and revision, then returned the frozen protocol, safety output, and
+                        route expectations declared by the mission contract.
+                    </p>
+                </div>
+                <div class="suite-actions">
+                    <span class="suite-summary" id="suiteSummary">Not run</span>
+                    <button class="primary-button" id="runSuiteButtonBottom" type="button">Run matrix</button>
+                </div>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>State</th>
+                            <th>Expected</th>
+                            <th>Actual</th>
+                            <th>Action</th>
+                            <th>Completion</th>
+                            <th>Route</th>
+                            <th>Result</th>
+                        </tr>
+                    </thead>
+                    <tbody id="suiteBody">
+                        <tr class="empty-row"><td colspan="7">Run the matrix to populate the evidence table.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <footer>
+            <span>CALM Mission Control · development verification console</span>
+            <span>Endpoint: <code>POST /api/v1/respond</code></span>
+        </footer>
+    </div>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <script>
+        const API_ENDPOINT = "/api/v1/respond";
+        const HEALTH_ENDPOINT = "/health";
+        const MATRIX_QUESTION = "What should I do?";
+
+        const MISSION_ID = "school-earthquake-minimal";
+        const MISSION_ENDPOINT = `/api/v1/missions/${MISSION_ID}`;
+        let missionContract = null;
+        let scenarios = [];
+
+        function clone(value) {
+            return JSON.parse(JSON.stringify(value));
+        }
+
+        function makeSessionId(stateId) {
+            const token = globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`;
+            return `browser-${stateId}-${token}`;
+        }
+
+        function incomingEdgeFor(contract, stateId, verification) {
+            if (stateId === contract.initial_state_id) {
+                return {
+                    previousStateId: null,
+                    transitionEvent: "MISSION_STARTED",
+                    stateSeq: 1,
+                    previousStateSeq: 0
+                };
+            }
+
+            const configuredEntry = verification.entry ?? {};
+            const configuredPrevious = verification.previous_state_id
+                ?? configuredEntry.previous_state_id;
+            const configuredEvent = verification.transition_event
+                ?? configuredEntry.transition_event;
+            if (configuredPrevious && configuredEvent) {
+                return {
+                    previousStateId: configuredPrevious,
+                    transitionEvent: configuredEvent,
+                    stateSeq: 2,
+                    previousStateSeq: 1
+                };
+            }
+
+            for (const [previousStateId, previousState] of Object.entries(contract.states)) {
+                const transition = (previousState.transitions ?? []).find(
+                    item => item.to_state_id === stateId
+                );
+                if (transition) {
+                    return {
+                        previousStateId,
+                        transitionEvent: transition.event,
+                        stateSeq: 2,
+                        previousStateSeq: 1
+                    };
+                }
+            }
+            throw new Error(`No reviewed incoming transition reaches ${stateId}.`);
+        }
+
+        function requireVerificationField(verification, stateId, field) {
+            if (!Object.hasOwn(verification, field)) {
+                throw new Error(`Mission verification for ${stateId} is missing ${field}.`);
+            }
+            return verification[field];
+        }
+
+        function buildScenarios(contract) {
+            const verificationStates = contract.verification?.states;
+            if (!verificationStates || Array.isArray(verificationStates)
+                || typeof verificationStates !== "object") {
+                throw new Error("Mission contract is missing verification.states metadata.");
+            }
+            if (contract.verification.question !== MATRIX_QUESTION) {
+                throw new Error(
+                    `Mission verification question must be exactly “${MATRIX_QUESTION}”.`
+                );
+            }
+            const configuredOrder = contract.verification.callable_state_order;
+            const stateOrder = Array.isArray(configuredOrder)
+                ? configuredOrder
+                : Object.keys(verificationStates);
+
+            return stateOrder.map(stateId => {
+                const state = contract.states[stateId];
+                const verification = verificationStates[stateId];
+                if (!state || state.kind === "terminal" || !verification) {
+                    throw new Error(`Verification references a non-callable state: ${stateId}.`);
+                }
+                const entry = incomingEdgeFor(contract, stateId, verification);
+                const context = {
+                    ...clone(contract.base_context),
+                    ...clone(state.context_patch),
+                    session_id: makeSessionId(stateId),
+                    scenario_id: contract.mission_id,
+                    mission_revision: contract.mission_revision,
+                    state_id: stateId,
+                    state_seq: entry.stateSeq,
+                    previous_state_seq: entry.previousStateSeq,
+                    previous_state_id: entry.previousStateId,
+                    transition_event: entry.transitionEvent,
+                    timestamp: new Date().toISOString()
+                };
+                return {
+                    id: stateId,
+                    name: state.label,
+                    description: `${stateId} · ${state.kind.replace("_", " ")}`,
+                    missionId: contract.mission_id,
+                    missionRevision: contract.mission_revision,
+                    simulationOnly: contract.simulation_only === true,
+                    expectedProtocol: state.calm.protocol_id,
+                    expectedAction: state.calm.action_code,
+                    expectedCompletion: state.calm.expected_completion_code,
+                    expectedMovement: requireVerificationField(
+                        verification, stateId, "expected_movement_authorized"
+                    ),
+                    expectedRoute: requireVerificationField(
+                        verification, stateId, "expected_selected_route_id"
+                    ),
+                    expectedZone: requireVerificationField(
+                        verification, stateId, "expected_safe_zone_id"
+                    ),
+                    expectedResponseText: verification.expected_response_text,
+                    expectedTtsText: verification.expected_tts_text,
+                    expectedBlockedActions: verification.expected_blocked_action_codes,
+                    requiredBlockedActions: verification.required_blocked_action_codes,
+                    context
+                };
+            });
+        }
+
+
+        const elements = {
+            scenarioList: document.getElementById("scenarioList"),
+            question: document.getElementById("questionInput"),
+            locale: document.getElementById("localeSelect"),
+            context: document.getElementById("contextEditor"),
+            selectedState: document.getElementById("selectedStateName"),
+            expected: document.getElementById("expectedProtocol"),
+            responseCard: document.getElementById("responseCard"),
+            responseText: document.getElementById("responseText"),
+            protocolBadge: document.getElementById("protocolBadge"),
+            criticalityBadge: document.getElementById("criticalityBadge"),
+            matchBadge: document.getElementById("matchBadge"),
+            send: document.getElementById("sendButton"),
+            runSuite: document.getElementById("runSuiteButton"),
+            runSuiteBottom: document.getElementById("runSuiteButtonBottom"),
+            reset: document.getElementById("resetButton"),
+            speak: document.getElementById("speakButton"),
+            copy: document.getElementById("copyButton"),
+            action: document.getElementById("actionValue"),
+            completion: document.getElementById("completionValue"),
+            route: document.getElementById("routeValue"),
+            zone: document.getElementById("zoneValue"),
+            movement: document.getElementById("movementValue"),
+            llm: document.getElementById("llmValue"),
+            corpus: document.getElementById("corpusValue"),
+            latency: document.getElementById("latencyValue"),
+            trace: document.getElementById("traceList"),
+            sources: document.getElementById("sourceList"),
+            raw: document.getElementById("rawResponse"),
+            suiteBody: document.getElementById("suiteBody"),
+            suiteSummary: document.getElementById("suiteSummary"),
+            connectionDot: document.getElementById("connectionDot"),
+            connectionLabel: document.getElementById("connectionLabel"),
+            connectionDetail: document.getElementById("connectionDetail"),
+            toast: document.getElementById("toast")
+        };
+
+        let selectedScenario = null;
+        let lastResponse = null;
+        let toastTimer = null;
+
+        function contextFor(scenario) {
+            const context = clone(scenario.context);
+            context.session_id = makeSessionId(scenario.id);
+            context.timestamp = new Date().toISOString();
+            return context;
+        }
+
+        function showToast(message, isError = false) {
+            clearTimeout(toastTimer);
+            elements.toast.textContent = message;
+            elements.toast.classList.toggle("error", isError);
+            elements.toast.classList.add("show");
+            toastTimer = setTimeout(() => elements.toast.classList.remove("show"), 3200);
+        }
+
+        function makeScenarioButton(scenario, index) {
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className = "state-button";
+            button.dataset.scenarioId = scenario.id;
+            button.setAttribute("aria-pressed", "false");
+
+            const number = document.createElement("span");
+            number.className = "state-number";
+            number.textContent = String(index + 1).padStart(2, "0");
+
+            const content = document.createElement("span");
+            const name = document.createElement("span");
+            name.className = "state-name";
+            name.textContent = scenario.name;
+            const description = document.createElement("span");
+            description.className = "state-description";
+            description.textContent = scenario.description;
+            const protocol = document.createElement("span");
+            protocol.className = "state-protocol";
+            protocol.textContent = scenario.expectedProtocol;
+            content.append(name, description, protocol);
+            button.append(number, content);
+            button.addEventListener("click", () => selectScenario(scenario.id));
+            return button;
+        }
+
+        function renderScenarioList() {
+            elements.scenarioList.replaceChildren(
+                ...scenarios
+                    .filter(scenario => scenario.showInRail !== false)
+                    .map((scenario, index) => makeScenarioButton(scenario, index))
+            );
+        }
+
+        function selectScenario(id) {
+            selectedScenario = scenarios.find(scenario => scenario.id === id) ?? scenarios[0];
+            document.querySelectorAll(".state-button").forEach(button => {
+                const active = button.dataset.scenarioId === selectedScenario.id;
+                button.classList.toggle("active", active);
+                button.setAttribute("aria-pressed", String(active));
+            });
+            elements.selectedState.textContent = selectedScenario.name;
+            elements.expected.textContent = `${selectedScenario.expectedProtocol} / ${selectedScenario.expectedCompletion}`;
+            elements.context.value = JSON.stringify(contextFor(selectedScenario), null, 2);
+            clearResponse();
+        }
+
+        function clearResponse() {
+            lastResponse = null;
+            elements.responseText.textContent = "Choose a state, keep or change the question, then ask CALM.";
+            elements.responseText.classList.add("placeholder");
+            elements.protocolBadge.textContent = "No response";
+            elements.criticalityBadge.textContent = "Waiting";
+            elements.criticalityBadge.className = "badge neutral";
+            elements.matchBadge.textContent = "Not tested";
+            elements.matchBadge.className = "badge neutral";
+            elements.speak.disabled = true;
+            elements.copy.disabled = true;
+            for (const field of [elements.action, elements.completion, elements.route, elements.zone, elements.movement, elements.llm, elements.corpus, elements.latency]) {
+                field.textContent = "—";
+            }
+            fillList(elements.trace, ["No decision yet."]);
+            fillList(elements.sources, ["No evidence selected yet."]);
+            elements.raw.textContent = "{}";
+        }
+
+        function fillList(element, items) {
+            const nodes = items.map(item => {
+                const li = document.createElement("li");
+                li.textContent = item;
+                return li;
+            });
+            element.replaceChildren(...nodes);
+        }
+
+        function parseEditorContext() {
+            let context;
+            try {
+                context = JSON.parse(elements.context.value);
+            } catch (error) {
+                throw new Error(`Context JSON is invalid: ${error.message}`);
+            }
+            if (!context || Array.isArray(context) || typeof context !== "object") {
+                throw new Error("Context JSON must contain one object.");
+            }
+            context.timestamp = new Date().toISOString();
+            elements.context.value = JSON.stringify(context, null, 2);
+            return context;
+        }
+
+        async function requestCALM(context, question, locale) {
+            const response = await fetch(API_ENDPOINT, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ question, locale, context })
+            });
+            let body;
+            try {
+                body = await response.json();
+            } catch {
+                throw new Error(`API returned HTTP ${response.status} without JSON.`);
+            }
+            if (!response.ok) {
+                throw new Error(typeof body.detail === "string" ? body.detail : `API returned HTTP ${response.status}.`);
+            }
+            return body;
+        }
+
+        function localeExpectation(value, locale) {
+            if (typeof value === "string") return value;
+            if (value && !Array.isArray(value) && typeof value === "object") {
+                return value[locale];
+            }
+            return undefined;
+        }
+
+        function sameStringSet(actual, expected) {
+            if (!Array.isArray(actual) || !Array.isArray(expected)) return false;
+            const left = [...new Set(actual)].sort();
+            const right = [...new Set(expected)].sort();
+            return left.length === right.length
+                && left.every((item, index) => item === right[index]);
+        }
+
+        function expectedEvaluation(result, scenario, locale) {
+            const expectedResponse = localeExpectation(
+                scenario.expectedResponseText, locale
+            );
+            const configuredTts = localeExpectation(scenario.expectedTtsText, locale);
+            const expectedTts = configuredTts ?? expectedResponse;
+            const missingOracleFields = [];
+            if (expectedResponse === undefined) {
+                missingOracleFields.push(`expected_response_text.${locale}`);
+            }
+
+            let blockedActionsMatch = true;
+            if (Array.isArray(scenario.expectedBlockedActions)) {
+                blockedActionsMatch = sameStringSet(
+                    result.blocked_action_codes, scenario.expectedBlockedActions
+                );
+            } else if (Array.isArray(scenario.requiredBlockedActions)) {
+                const actual = new Set(result.blocked_action_codes ?? []);
+                blockedActionsMatch = scenario.requiredBlockedActions.every(
+                    actionCode => actual.has(actionCode)
+                );
+            } else {
+                missingOracleFields.push("expected_blocked_action_codes");
+            }
+
+            const checks = {
+                protocol: result.protocol_id === scenario.expectedProtocol,
+                action: result.action_code === scenario.expectedAction,
+                completion: result.completion_or_error_code === scenario.expectedCompletion,
+                route: result.selected_route_id === scenario.expectedRoute,
+                zone: result.safe_zone_id === scenario.expectedZone,
+                movement: result.movement_authorized === scenario.expectedMovement,
+                context: result.context_status === "valid",
+                deterministic: result.llm_used === false,
+                learnerText: typeof result.response_text === "string"
+                    && result.response_text.trim().length > 0,
+                missionRecognized: result.mission?.recognized === true,
+                missionId: result.mission?.mission_id === scenario.missionId,
+                missionRevision: result.mission?.mission_revision === scenario.missionRevision,
+                missionState: result.mission?.state_id === scenario.id,
+                missionContract: result.mission?.contract_status === "valid",
+                simulationBoundary: result.mission?.simulation_only === scenario.simulationOnly,
+                exactResponse: expectedResponse === undefined
+                    || result.response_text === expectedResponse,
+                exactTts: expectedTts === undefined || result.tts_text === expectedTts,
+                blockedActions: blockedActionsMatch
+            };
+            const failedChecks = Object.entries(checks)
+                .filter(([, matches]) => !matches)
+                .map(([name]) => name);
+            return {
+                matches: failedChecks.length === 0,
+                fullOracle: missingOracleFields.length === 0,
+                failedChecks,
+                missingOracleFields
+            };
+        }
+
+        function renderResponse(result, scenario, locale) {
+            lastResponse = result;
+            elements.responseText.textContent = result.response_text || "The API returned no learner text.";
+            elements.responseText.classList.remove("placeholder");
+            elements.protocolBadge.textContent = result.protocol_id || "No protocol";
+            elements.criticalityBadge.textContent = result.criticality || "Fallback";
+            elements.criticalityBadge.className = "badge neutral";
+            if (result.criticality === "P0_CRITICAL") elements.criticalityBadge.className = "badge critical";
+            if (result.criticality === "P1_IMPORTANT") elements.criticalityBadge.className = "badge important";
+            if (result.criticality === "P2_EDUCATIONAL") elements.criticalityBadge.className = "badge educational";
+
+            const evaluation = expectedEvaluation(result, scenario, locale);
+            if (!evaluation.matches) {
+                elements.matchBadge.textContent = "Different result";
+                elements.matchBadge.className = "badge fail";
+            } else if (!evaluation.fullOracle) {
+                elements.matchBadge.textContent = "Match · partial oracle";
+                elements.matchBadge.className = "badge important";
+            } else {
+                elements.matchBadge.textContent = "Expected match";
+                elements.matchBadge.className = "badge pass";
+            }
+            elements.action.textContent = result.action_code ?? "—";
+            elements.completion.textContent = result.completion_or_error_code ?? "—";
+            elements.route.textContent = result.selected_route_id ?? "None";
+            elements.zone.textContent = result.safe_zone_id ?? "None";
+            elements.movement.textContent = result.movement_authorized ? "Authorized" : "Not authorized";
+            elements.llm.textContent = result.llm_used ? "Yes" : "No";
+            elements.corpus.textContent = result.corpus?.decision ?? "—";
+            elements.latency.textContent = Number.isFinite(result.latency_ms) ? `${result.latency_ms} ms` : "—";
+
+            const verificationNotes = [
+                ...(result.decision_trace?.length ? result.decision_trace : ["No trace returned."]),
+                ...evaluation.failedChecks.map(check => `verification_failed:${check}`),
+                ...evaluation.missingOracleFields.map(field => `verification_oracle_missing:${field}`)
+            ];
+            fillList(elements.trace, verificationNotes);
+            fillList(
+                elements.sources,
+                result.source_refs?.length
+                    ? result.source_refs.map(source => `${source.source_id} · ${source.locator} · ${source.disposition}`)
+                    : ["No evidence reference returned."]
+            );
+            elements.raw.textContent = JSON.stringify(result, null, 2);
+            elements.speak.disabled = !result.response_text;
+            elements.copy.disabled = !result.response_text;
+            return evaluation;
+        }
+
+        function setBusy(busy) {
+            elements.responseCard.setAttribute("aria-busy", String(busy));
+            elements.send.disabled = busy;
+            elements.send.textContent = busy ? "Checking state…" : "Ask CALM";
+            document.querySelectorAll(".state-button").forEach(button => {
+                button.disabled = busy;
+            });
+        }
+
+        async function sendCurrent() {
+            if (!selectedScenario) {
+                showToast("Wait for the mission contract to load.", true);
+                return;
+            }
+            const scenarioSnapshot = selectedScenario;
+            const questionSnapshot = elements.question.value;
+            const localeSnapshot = elements.locale.value;
+            setBusy(true);
+            try {
+                const contextSnapshot = parseEditorContext();
+                const result = await requestCALM(
+                    contextSnapshot, questionSnapshot, localeSnapshot
+                );
+                const evaluation = renderResponse(
+                    result, scenarioSnapshot, localeSnapshot
+                );
+                if (!evaluation.matches) {
+                    showToast(
+                        `Response differs: ${evaluation.failedChecks.join(", ")}.`, true
+                    );
+                } else if (!evaluation.fullOracle) {
+                    showToast(
+                        `Metadata matches, but the contract lacks: ${evaluation.missingOracleFields.join(", ")}.`
+                    );
+                } else {
+                    showToast("Response matches the selected state.");
+                }
+            } catch (error) {
+                showToast(error.message, true);
+                elements.responseText.textContent = error.message;
+                elements.responseText.classList.remove("placeholder");
+                elements.matchBadge.textContent = "Request failed";
+                elements.matchBadge.className = "badge fail";
+            } finally {
+                setBusy(false);
+            }
+        }
+
+
+        function makeCell(text, className = "") {
+            const cell = document.createElement("td");
+            cell.textContent = text;
+            if (className) cell.className = className;
+            return cell;
+        }
+
+        function setMatrixBusy(busy) {
+            elements.question.disabled = busy;
+            elements.locale.disabled = busy;
+            elements.context.disabled = busy;
+            elements.send.disabled = busy;
+            elements.reset.disabled = busy;
+            document.querySelectorAll(".state-button").forEach(button => {
+                button.disabled = busy;
+            });
+            [elements.runSuite, elements.runSuiteBottom].forEach((button, index) => {
+                button.disabled = busy;
+                button.textContent = busy
+                    ? "Verifying…"
+                    : (index === 0 ? "Verify all states" : "Run matrix");
+            });
+        }
+
+        async function runVerificationMatrix() {
+            if (!scenarios.length) {
+                showToast("Wait for the mission contract to load.", true);
+                return;
+            }
+            const localeSnapshot = elements.locale.value;
+            setMatrixBusy(true);
+            elements.suiteBody.replaceChildren();
+            elements.suiteSummary.textContent = `0 / ${scenarios.length}`;
+            let matched = 0;
+            let fullPasses = 0;
+            let partialOracles = 0;
+
+            try {
+                for (const scenario of scenarios) {
+                    const row = document.createElement("tr");
+                    try {
+                        const result = await requestCALM(
+                            contextFor(scenario), MATRIX_QUESTION, localeSnapshot
+                        );
+                        const evaluation = expectedEvaluation(
+                            result, scenario, localeSnapshot
+                        );
+                        if (evaluation.matches) {
+                            matched += 1;
+                            if (evaluation.fullOracle) fullPasses += 1;
+                            else partialOracles += 1;
+                        }
+                        row.append(
+                            makeCell(scenario.name),
+                            makeCell(scenario.expectedProtocol, "code"),
+                            makeCell(result.protocol_id ?? "None", "code"),
+                            makeCell(result.action_code ?? "None", "code"),
+                            makeCell(result.completion_or_error_code ?? "—", "code"),
+                            makeCell(result.selected_route_id ?? "None", "code")
+                        );
+                        const resultCell = makeCell("", "code");
+                        const badge = document.createElement("span");
+                        if (!evaluation.matches) {
+                            badge.className = "badge fail";
+                            badge.textContent = "Fail";
+                            badge.title = `Failed checks: ${evaluation.failedChecks.join(", ")}`;
+                        } else if (!evaluation.fullOracle) {
+                            badge.className = "badge important";
+                            badge.textContent = "Partial";
+                            badge.title = `Missing oracle fields: ${evaluation.missingOracleFields.join(", ")}`;
+                        } else {
+                            badge.className = "badge pass";
+                            badge.textContent = "Pass";
+                        }
+                        resultCell.append(badge);
+                        row.append(resultCell);
+                    } catch (error) {
+                        row.append(
+                            makeCell(scenario.name),
+                            makeCell(scenario.expectedProtocol, "code"),
+                            makeCell("Request failed", "code"),
+                            makeCell("—", "code"),
+                            makeCell(error.message, "code"),
+                            makeCell("—", "code")
+                        );
+                        const resultCell = makeCell("", "code");
+                        const badge = document.createElement("span");
+                        badge.className = "badge fail";
+                        badge.textContent = "Error";
+                        resultCell.append(badge);
+                        row.append(resultCell);
+                    }
+                    elements.suiteBody.append(row);
+                    elements.suiteSummary.textContent =
+                        `${matched} / ${scenarios.length} matched · ${partialOracles} partial`;
+                }
+
+                const fullMatrixPass = fullPasses === scenarios.length;
+                const metadataPass = matched === scenarios.length;
+                elements.suiteSummary.textContent = fullMatrixPass
+                    ? `${fullPasses} / ${scenarios.length} · full oracle pass`
+                    : `${matched} / ${scenarios.length} matched · ${partialOracles} partial`;
+                if (fullMatrixPass) {
+                    showToast("All independent states passed the complete verification oracle.");
+                } else if (metadataPass) {
+                    showToast("All states matched, but one or more exact oracle fields are missing.");
+                } else {
+                    showToast("Verification matrix found one or more differences.", true);
+                }
+            } finally {
+                setMatrixBusy(false);
+            }
+            document.getElementById("suiteSection").scrollIntoView({
+                behavior: "smooth",
+                block: "start"
+            });
+        }
+
+
+        async function loadMissionContract() {
+            const response = await fetch(MISSION_ENDPOINT);
+            if (!response.ok) throw new Error(`Mission contract returned HTTP ${response.status}.`);
+            missionContract = await response.json();
+            scenarios = buildScenarios(missionContract);
+            if (!scenarios.length) throw new Error("Mission contract contains no callable states.");
+            renderScenarioList();
+            selectScenario(scenarios[0].id);
+        }
+
+        async function checkHealth() {
+            try {
+                const response = await fetch(HEALTH_ENDPOINT);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const health = await response.json();
+                elements.connectionDot.className = "connection-dot online";
+                elements.connectionLabel.textContent = "API online";
+                elements.connectionDetail.textContent = `${health.corpus.eligible_card_count} development cards · ${health.missions.loaded_contract_count} mission contract · ${health.corpus.runtime_approved ? "runtime approved" : "production blocked"} · ${health.school_config.status}`;
+            } catch (error) {
+                elements.connectionDot.className = "connection-dot offline";
+                elements.connectionLabel.textContent = "API offline";
+                elements.connectionDetail.textContent = `Start the server on port 8000, then reload. ${error.message}`;
+            }
+        }
+
+        elements.send.addEventListener("click", sendCurrent);
+        elements.runSuite.addEventListener("click", runVerificationMatrix);
+        elements.runSuiteBottom.addEventListener("click", runVerificationMatrix);
+        elements.reset.addEventListener("click", () => {
+            if (!selectedScenario) return;
+            elements.context.value = JSON.stringify(contextFor(selectedScenario), null, 2);
+            showToast("Trusted context reset to the selected preset.");
+        });
+        elements.speak.addEventListener("click", () => {
+            if (!lastResponse?.response_text || !("speechSynthesis" in window)) return;
+            speechSynthesis.cancel();
+            const speech = new SpeechSynthesisUtterance(lastResponse.response_text);
+            speech.lang = elements.locale.value === "fil-PH" ? "fil-PH" : "en-PH";
+            speech.rate = 0.95;
+            speechSynthesis.speak(speech);
+        });
+        elements.copy.addEventListener("click", async () => {
+            if (!lastResponse?.response_text) return;
+            try {
+                await navigator.clipboard.writeText(lastResponse.response_text);
+                showToast("Response copied.");
+            } catch {
+                showToast("Clipboard access is unavailable in this browser.", true);
+            }
+        });
+        elements.question.addEventListener("keydown", event => {
+            if ((event.ctrlKey || event.metaKey) && event.key === "Enter") sendCurrent();
+        });
+
+        async function initialize() {
+            await checkHealth();
+            try {
+                await loadMissionContract();
+            } catch (error) {
+                elements.connectionDot.className = "connection-dot offline";
+                elements.connectionLabel.textContent = "Contract unavailable";
+                elements.connectionDetail.textContent = error.message;
+                elements.scenarioList.textContent = "The executable mission contract could not be loaded.";
+                showToast(error.message, true);
+            }
+        }
+
+        initialize();
+    </script>
+</body>
+</html>

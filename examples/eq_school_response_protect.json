@@ -1,0 +1,19 @@
+{
+  "description": "Stable response assertions; latency and timestamp are intentionally omitted.",
+  "expected_subset": {
+    "scenario_id": "school-earthquake-minimal",
+    "state_id": "EQ-S-D01",
+    "protocol_id": "EQ-DUR-001",
+    "action_code": "DROP_COVER_HOLD",
+    "criticality": "P0_CRITICAL",
+    "context_status": "valid",
+    "movement_authorized": false,
+    "completion_or_error_code": "OK",
+    "llm_used": false,
+    "mission": {
+      "mission_revision": "1.0.0",
+      "state_id": "EQ-S-D01",
+      "contract_status": "valid"
+    }
+  }
+}

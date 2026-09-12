@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="description" content="CALM learner-facing low-poly Unity UI previsualization">
+    <title>CALM Classroom Preview</title>
+    <link rel="stylesheet" href="/static/css/simulation.css">
+</head>
+<body>
+    <a class="skip-link" href="#questionInput">Skip to learner question</a>
+
+    <main class="simulation-shell" id="simulationShell">
+        <canvas
+            id="sceneCanvas"
+            tabindex="0"
+            aria-label="Low-poly first-person earthquake classroom. Use W A S D or arrow keys to move and the mouse to look around."
+        ></canvas>
+
+        <div class="visor-vignette" aria-hidden="true"></div>
+        <div class="reticle" aria-hidden="true"><span></span></div>
+
+        <header class="top-rail">
+            <div class="brand-lockup">
+                <span class="brand-mark" aria-hidden="true">C</span>
+                <span><strong>CALM</strong><small>classroom preview</small></span>
+            </div>
+            <div class="mission-chip">
+                <span class="status-dot" id="apiDot"></span>
+                <span id="apiStatus">Connecting</span>
+            </div>
+            <div class="scene-chip">
+                <small id="phaseLabel">Before</small>
+                <strong id="sceneLabel">Classroom A</strong>
+            </div>
+        </header>
+
+        <section class="development-flag" aria-label="Development warning">
+            <span>Simulation</span>
+            <p>Demo route and school data—not an approved real emergency procedure.</p>
+        </section>
+
+        <section class="comms-widget" id="commsWidget" aria-label="KALMA assistant status: ready">
+            <span class="kalma-visual" aria-hidden="true">
+                <kalma-avatar id="kalmaAvatar" state="ready"></kalma-avatar>
+            </span>
+            <span class="comms-copy">
+                <small>KALMA · VR companion</small>
+                <strong id="commsState">Ready</strong>
+            </span>
+        </section>
+
+        <section class="objective-card" aria-live="polite">
+            <small>Current safety step</small>
+            <strong id="objectiveLabel">Loading mission…</strong>
+            <span id="objectiveHint">Trusted state controls the guidance.</span>
+        </section>
+
+        <section class="proximity-alert" id="proximityAlert" role="status" aria-live="polite">
+            <span class="alert-symbol">!</span>
+            <span><small id="alertKind">Caution</small><strong id="alertText">Keep away from the hazard.</strong></span>
+        </section>
+
+        <section class="subtitle-panel" aria-label="Dialogue subtitles" aria-live="polite">
+            <div class="subtitle-line learner-line" id="learnerLine" hidden>
+                <span>You</span><p id="learnerSubtitle"></p>
+            </div>
+            <div class="subtitle-line calm-line">
+                <span>KALMA</span>
+                <p id="calmSubtitle">Choose a mission state, then ask what to do.</p>
+            </div>
+            <div class="response-meta">
+                <span id="protocolLabel">Waiting for mission</span>
+                <span id="movementLabel">Movement not authorized</span>
+            </div>
+        </section>
+
+        <section class="control-hint" aria-label="Movement controls">
+            <div class="key-cluster" aria-hidden="true">
+                <span></span><kbd>W</kbd><span></span><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>
+            </div>
+            <p><strong>Move</strong><span>Mouse or drag to look</span></p>
+        </section>
+
+        <button class="ptt-button" id="pttButton" type="button">
+            <span class="mic-icon" aria-hidden="true"></span>
+            <span><strong>Hold to talk</strong><small>Left X · Spacebar</small></span>
+        </button>
+
+        <button class="panel-toggle" id="panelToggle" type="button" aria-expanded="false" aria-controls="previewPanel">
+            <span aria-hidden="true">☰</span> Preview controls
+        </button>
+
+        <aside class="preview-panel" id="previewPanel" aria-label="Simulation preview controls" aria-hidden="true">
+            <div class="panel-heading">
+                <div><small>Developer preview</small><h1>Mission state</h1></div>
+                <button class="icon-button" id="closePanel" type="button" aria-label="Close preview controls">×</button>
+            </div>
+
+            <label class="field-label" for="stateSelect">Trusted Unity state</label>
+            <select id="stateSelect" disabled><option>Loading mission…</option></select>
+
+            <div class="state-readout">
+                <span><small>State</small><strong id="stateCode">—</strong></span>
+                <span><small>Route</small><strong id="routeCode">Locked</strong></span>
+            </div>
+
+            <label class="field-label" for="localeSelect">Language</label>
+            <select id="localeSelect">
+                <option value="en-PH">English (PH)</option>
+                <option value="fil-PH">Filipino</option>
+                <option value="taglish-PH">Taglish</option>
+            </select>
+
+            <label class="field-label" for="questionInput">Typed fallback</label>
+            <textarea id="questionInput" rows="3">What should I do?</textarea>
+            <button class="ask-button" id="askButton" type="button" disabled>Ask KALMA</button>
+
+            <div class="panel-options">
+                <label><input id="audioToggle" type="checkbox" checked> Voice and earcons</label>
+                <label><input id="motionToggle" type="checkbox" checked> Environmental motion</label>
+            </div>
+
+            <p class="privacy-note">Learner audio is transcribed locally and deleted. Speech cannot change the trusted mission state.</p>
+            <a class="console-link" href="/">Open Mission Control →</a>
+        </aside>
+
+        <div class="touch-stick" aria-label="Touch movement controls">
+            <button type="button" data-move="forward" aria-label="Move forward">▲</button>
+            <button type="button" data-move="left" aria-label="Move left">◀</button>
+            <button type="button" data-move="backward" aria-label="Move backward">▼</button>
+            <button type="button" data-move="right" aria-label="Move right">▶</button>
+        </div>
+
+        <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    </main>
+
+    <script type="module" src="/static/js/simulation.js?v=20260829-conversation"></script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+{
+  "session_id": "unity-eq-demo-7f3a2c",
+  "scenario_id": "school-earthquake-minimal",
+  "state_id": "EQ-S-A03",
+  "protocol_id": "EQ-AFT-001",
+  "action_code": "SCHOOL_EVACUATE_AFTER_SHAKING",
+  "completion_or_error_code": "OK",
+  "timestamp": "2026-07-31T10:00:08+08:00",
+  "latency_ms": 9.6
+}

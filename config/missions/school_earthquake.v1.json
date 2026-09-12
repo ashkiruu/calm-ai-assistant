@@ -1,0 +1,798 @@
+{
+  "schema_version": "1.0.0",
+  "mission_id": "school-earthquake-minimal",
+  "mission_revision": "1.0.0",
+  "title": "EQ School — Classroom to Assembly",
+  "description": "Development-only Grade 4 earthquake learning mission with one ending, correction loops, and a fail-closed route hold.",
+  "simulation_only": true,
+  "valid_for_real_emergency": false,
+  "linear_narrative": true,
+  "adaptive_branching": false,
+  "initial_state_id": "EQ-S-B01",
+  "dependencies": {
+    "context_contract_version": "1.2",
+    "school_profile": {
+      "profile_id": "CALM_DEMO_ELEMENTARY_SCHOOL",
+      "schema_version": "1.0",
+      "status_required": "DEMO_PLACEHOLDER_NOT_SCHOOL_APPROVED"
+    },
+    "protocol_revisions": {
+      "EQ-BEF-001": 1,
+      "EQ-BEF-003": 1,
+      "EQ-DUR-001": 1,
+      "EQ-DUR-002": 1,
+      "EQ-DUR-003": 1,
+      "EQ-AFT-001": 1,
+      "EQ-AFT-004": 1,
+      "EQ-AFT-005": 1,
+      "EQ-AFT-006": 1,
+      "EQ-AFT-007": 1,
+      "EQ-AFT-008": 1
+    }
+  },
+  "base_context": {
+    "context_contract_version": "1.2",
+    "school_profile_id": "CALM_DEMO_ELEMENTARY_SCHOOL",
+    "hazard": "earthquake",
+    "setting": "school",
+    "responsible_adult_present": true,
+    "hazard_active": false,
+    "alarm_id": null,
+    "safe_route_id": null,
+    "safe_zone_id": null,
+    "route_snapshot_id": null,
+    "route_states": {},
+    "shaking_active": false,
+    "aftershock_active": false,
+    "approved_cover_reachable": false,
+    "learner_heading_to_exit": false,
+    "near_falling_or_glass_hazard": false,
+    "unsafe_object_visible": false,
+    "structure_damaged_or_not_cleared": false,
+    "learner_attempting_reentry": false,
+    "teacher_evacuate_instruction": false,
+    "injury_or_missing_person_known": false,
+    "injury_or_missing_person_report_pending": false,
+    "at_assembly_area": false,
+    "headcount_active": false,
+    "coastal_risk_state": "not_applicable",
+    "mission_complete": false
+  },
+  "main_path": [
+    "EQ-S-B01",
+    "EQ-S-B02",
+    "EQ-S-B03",
+    "EQ-S-D01",
+    "EQ-S-D04",
+    "EQ-S-A01",
+    "EQ-S-A02",
+    "EQ-S-A03",
+    "EQ-S-A04",
+    "EQ-S-A05",
+    "EQ-S-A06",
+    "EQ-S-A04R",
+    "EQ-S-A07",
+    "EQ-S-END"
+  ],
+  "verification": {
+    "question": "What should I do?",
+    "callable_state_order": [
+      "EQ-S-B01",
+      "EQ-S-B02",
+      "EQ-S-B03",
+      "EQ-S-D01",
+      "EQ-S-D02",
+      "EQ-S-D03",
+      "EQ-S-D04",
+      "EQ-S-A01",
+      "EQ-S-A02",
+      "EQ-S-A03",
+      "EQ-S-H01-NO-ROUTE",
+      "EQ-S-A04",
+      "EQ-S-A05",
+      "EQ-S-A06",
+      "EQ-S-A04R",
+      "EQ-S-A07"
+    ],
+    "states": {
+      "EQ-S-B01": {
+        "entry": {"previous_state_id": null, "transition_event": "MISSION_STARTED"},
+        "expected_movement_authorized": false,
+        "expected_selected_route_id": null,
+        "expected_safe_zone_id": null,
+        "response_mode": "protocol_text"
+      },
+      "EQ-S-B02": {
+        "entry": {"previous_state_id": "EQ-S-B01", "transition_event": "APPROVED_COVER_IDENTIFIED"},
+        "expected_movement_authorized": false,
+        "expected_selected_route_id": null,
+        "expected_safe_zone_id": null,
+        "response_mode": "protocol_text"
+      },
+      "EQ-S-B03": {
+        "entry": {"previous_state_id": "EQ-S-B02", "transition_event": "UNSAFE_OBJECT_REPORTED"},
+        "expected_movement_authorized": false,
+        "expected_selected_route_id": null,
+        "expected_safe_zone_id": "ASSEMBLY_A",
+        "response_mode": "protocol_text"
+      },
+      "EQ-S-D01": {
+        "entry": {"previous_state_id": "EQ-S-B03", "transition_event": "SHAKING_STARTED"},
+        "expected_movement_authorized": false,
+        "expected_selected_route_id": null,
+        "expected_safe_zone_id": null,
+        "response_mode": "protocol_text"
+      },
+      "EQ-S-D02": {
+        "entry": {"previous_state_id": "EQ-S-D01", "transition_event": "RUN_TO_EXIT_ATTEMPTED"},
+        "expected_movement_authorized": false,
+        "expected_selected_route_id": null,
+        "expected_safe_zone_id": null,
+        "response_mode": "protocol_text"
+      },
+      "EQ-S-D03": {
+        "entry": {"previous_state_id": "EQ-S-D04", "transition_event": "GLASS_OR_SHELF_APPROACH_ATTEMPTED"},
+        "expected_movement_authorized": false,
+        "expected_selected_route_id": null,
+        "expected_safe_zone_id": null,
+        "response_mode": "protocol_text"
+      },
+      "EQ-S-D04": {
+        "entry": {"previous_state_id": "EQ-S-D01", "transition_event": "PROTECTED_POSE_ESTABLISHED"},
+        "expected_movement_authorized": false,
+        "expected_selected_route_id": null,
+        "expected_safe_zone_id": null,
+        "response_mode": "protocol_text"
+      },
+      "EQ-S-A01": {
+        "entry": {"previous_state_id": "EQ-S-D04", "transition_event": "SHAKING_STOPPED"},
+        "expected_movement_authorized": false,
+        "expected_selected_route_id": null,
+        "expected_safe_zone_id": null,
+        "response_mode": "protocol_text"
+      },
+      "EQ-S-A02": {
+        "entry": {"previous_state_id": "EQ-S-A01", "transition_event": "TEACHER_EVACUATION_ORDERED"},
+        "expected_movement_authorized": true,
+        "expected_selected_route_id": "ROUTE_CLASSROOM_A_ALTERNATE",
+        "expected_safe_zone_id": "ASSEMBLY_A",
+        "response_mode": "protocol_text"
+      },
+      "EQ-S-A03": {
+        "entry": {"previous_state_id": "EQ-S-A02", "transition_event": "AUTHORIZED_ROUTE_ACCEPTED"},
+        "expected_movement_authorized": true,
+        "expected_selected_route_id": "ROUTE_CLASSROOM_A_ALTERNATE",
+        "expected_safe_zone_id": "ASSEMBLY_A",
+        "response_mode": "protocol_text"
+      },
+      "EQ-S-H01-NO-ROUTE": {
+        "entry": {"previous_state_id": "EQ-S-A03", "transition_event": "ROUTE_REVOKED"},
+        "expected_movement_authorized": false,
+        "expected_selected_route_id": null,
+        "expected_safe_zone_id": null,
+        "response_mode": "no_route_fallback"
+      },
+      "EQ-S-A04": {
+        "entry": {"previous_state_id": "EQ-S-A03", "transition_event": "ASSEMBLY_TRIGGER_REACHED"},
+        "expected_movement_authorized": false,
+        "expected_selected_route_id": null,
+        "expected_safe_zone_id": "ASSEMBLY_A",
+        "response_mode": "protocol_text"
+      },
+      "EQ-S-A05": {
+        "entry": {"previous_state_id": "EQ-S-A04", "transition_event": "FICTIONAL_MISSING_AVATAR_PROMPTED"},
+        "expected_movement_authorized": false,
+        "expected_selected_route_id": null,
+        "expected_safe_zone_id": "ASSEMBLY_A",
+        "response_mode": "protocol_text"
+      },
+      "EQ-S-A06": {
+        "entry": {"previous_state_id": "EQ-S-A05", "transition_event": "REPORT_HANDED_TO_TEACHER_AND_AFTERSHOCK_STARTED"},
+        "expected_movement_authorized": false,
+        "expected_selected_route_id": null,
+        "expected_safe_zone_id": "ASSEMBLY_A",
+        "response_mode": "protocol_text"
+      },
+      "EQ-S-A04R": {
+        "entry": {"previous_state_id": "EQ-S-A06", "transition_event": "AFTERSHOCK_STOPPED"},
+        "expected_movement_authorized": false,
+        "expected_selected_route_id": null,
+        "expected_safe_zone_id": "ASSEMBLY_A",
+        "response_mode": "protocol_text"
+      },
+      "EQ-S-A07": {
+        "entry": {"previous_state_id": "EQ-S-A04R", "transition_event": "HEADCOUNT_COMPLETED"},
+        "expected_movement_authorized": false,
+        "expected_selected_route_id": null,
+        "expected_safe_zone_id": "ASSEMBLY_A",
+        "response_mode": "protocol_text"
+      }
+    }
+  },
+  "states": {
+    "EQ-S-B01": {
+      "state_id": "EQ-S-B01",
+      "kind": "main",
+      "label": "Identify the nearest approved cover",
+      "context_patch": {
+        "phase": "before",
+        "location_type": "indoors",
+        "location_zone": "CLASSROOM_A",
+        "learner_action": "choosing_cover",
+        "approved_cover_reachable": true
+      },
+      "learner_actions": {
+        "permitted": ["SELECT_NEAREST_APPROVED_COVER", "ASK_CALM"],
+        "blocked": ["SELECT_WINDOW", "SELECT_SHELF", "SELECT_DOORWAY", "CROSS_ROOM_FOR_DISTANT_COVER"]
+      },
+      "calm": {
+        "invoke_on": ["ASK_CALM", "HINT_DELAY", "CONFIRM_SELECTION"],
+        "protocol_id": "EQ-BEF-001",
+        "action_code": "LEARN_SAFE_COVER_AND_ROUTE",
+        "expected_completion_code": "OK",
+        "enforce_protocol": false
+      },
+      "unity": {
+        "local_guard": "Reject unsafe cover choices without injury, punishment, or a jump scare.",
+        "success_condition": "Nearest configured sturdy student desk is selected."
+      },
+      "transitions": [
+        {"event": "APPROVED_COVER_IDENTIFIED", "to_state_id": "EQ-S-B02", "kind": "progression"}
+      ]
+    },
+    "EQ-S-B02": {
+      "state_id": "EQ-S-B02",
+      "kind": "main",
+      "label": "Report an unsafe classroom object",
+      "context_patch": {
+        "phase": "before",
+        "location_type": "indoors",
+        "location_zone": "CLASSROOM_A",
+        "learner_action": "inspect_hazard",
+        "unsafe_object_visible": true
+      },
+      "learner_actions": {
+        "permitted": ["MOVE_AWAY", "TELL_TEACHER", "ASK_CALM"],
+        "blocked": ["TOUCH_OBJECT", "CLIMB", "LIFT_OBJECT", "REPAIR_OBJECT"]
+      },
+      "calm": {
+        "invoke_on": ["ASK_CALM", "BLOCKED_ATTEMPT", "LEARNER_STALL"],
+        "protocol_id": "EQ-BEF-003",
+        "action_code": "REPORT_EARTHQUAKE_HAZARD",
+        "expected_completion_code": "OK",
+        "enforce_protocol": true
+      },
+      "unity": {
+        "local_guard": "The unsafe object is never manipulable by the learner.",
+        "success_condition": "Learner keeps distance and reports the object to the teacher."
+      },
+      "transitions": [
+        {"event": "UNSAFE_OBJECT_REPORTED", "to_state_id": "EQ-S-B03", "kind": "progression"}
+      ]
+    },
+    "EQ-S-B03": {
+      "state_id": "EQ-S-B03",
+      "kind": "main",
+      "label": "Learn the route and assembly area",
+      "context_patch": {
+        "phase": "before",
+        "location_type": "indoors",
+        "location_zone": "CLASSROOM_A",
+        "learner_action": "learning_route",
+        "safe_route_id": "ROUTE_CLASSROOM_A_PRIMARY",
+        "safe_zone_id": "ASSEMBLY_A",
+        "route_snapshot_id": "SIM_ROUTE_SNAPSHOT_TOPOLOGY_001",
+        "route_states": {
+          "ROUTE_CLASSROOM_A_PRIMARY": "UNKNOWN",
+          "ROUTE_CLASSROOM_A_ALTERNATE": "UNKNOWN"
+        }
+      },
+      "learner_actions": {
+        "permitted": ["IDENTIFY_CONFIGURED_ROUTE", "IDENTIFY_ASSEMBLY_AREA", "ASK_CALM"],
+        "blocked": ["SELECT_UNCONFIGURED_EXIT", "INVENT_SHORTCUT"]
+      },
+      "calm": {
+        "invoke_on": ["ASK_CALM", "HINT_DELAY", "CONFIRM_SELECTION"],
+        "protocol_id": "EQ-BEF-001",
+        "action_code": "LEARN_SAFE_COVER_AND_ROUTE",
+        "expected_completion_code": "OK",
+        "enforce_protocol": false
+      },
+      "unity": {
+        "local_guard": "Route display is for learning only and never authorizes movement.",
+        "success_condition": "Learner identifies the configured route and ASSEMBLY_A."
+      },
+      "transitions": [
+        {"event": "SHAKING_STARTED", "to_state_id": "EQ-S-D01", "kind": "progression"}
+      ]
+    },
+    "EQ-S-D01": {
+      "state_id": "EQ-S-D01",
+      "kind": "main",
+      "label": "Drop, Cover, and Hold On",
+      "context_patch": {
+        "phase": "during",
+        "location_type": "indoors",
+        "location_zone": "CLASSROOM_A",
+        "learner_action": "seeking_approved_cover",
+        "hazard_active": true,
+        "alarm_id": "SIM_EQ_SHAKING_CUE",
+        "shaking_active": true,
+        "approved_cover_reachable": true
+      },
+      "learner_actions": {
+        "permitted": ["DROP", "ENTER_NEAREST_APPROVED_COVER", "HOLD_ON"],
+        "blocked": ["RUN_TO_EXIT", "RETRIEVE_BOOK", "RETRIEVE_HARD_HAT", "RETRIEVE_GO_BAG", "APPROACH_WINDOW"]
+      },
+      "calm": {
+        "invoke_on": ["STATE_ENTRY", "ASK_CALM"],
+        "protocol_id": "EQ-DUR-001",
+        "action_code": "DROP_COVER_HOLD",
+        "expected_completion_code": "OK",
+        "enforce_protocol": true
+      },
+      "unity": {
+        "local_guard": "Allow only the short movement needed to enter the nearest approved cover.",
+        "success_condition": "Protected pose is established."
+      },
+      "transitions": [
+        {"event": "PROTECTED_POSE_ESTABLISHED", "to_state_id": "EQ-S-D04", "kind": "progression"},
+        {"event": "RUN_TO_EXIT_ATTEMPTED", "to_state_id": "EQ-S-D02", "kind": "correction"},
+        {"event": "GLASS_OR_SHELF_APPROACH_ATTEMPTED", "to_state_id": "EQ-S-D03", "kind": "correction"}
+      ]
+    },
+    "EQ-S-D02": {
+      "state_id": "EQ-S-D02",
+      "kind": "correction",
+      "label": "Correct a run-to-exit attempt",
+      "context_patch": {
+        "phase": "during",
+        "location_type": "indoors",
+        "location_zone": "CLASSROOM_A",
+        "learner_action": "heading_to_exit",
+        "hazard_active": true,
+        "alarm_id": "SIM_EQ_SHAKING_CUE",
+        "shaking_active": true,
+        "approved_cover_reachable": true,
+        "learner_heading_to_exit": true
+      },
+      "learner_actions": {
+        "permitted": ["RETURN_TO_APPROVED_COVER"],
+        "blocked": ["RUN_TO_EXIT", "USE_ELEVATOR"]
+      },
+      "calm": {
+        "invoke_on": ["STATE_ENTRY"],
+        "protocol_id": "EQ-DUR-003",
+        "action_code": "WAIT_FOR_SHAKING_TO_STOP",
+        "expected_completion_code": "OK",
+        "enforce_protocol": true
+      },
+      "unity": {
+        "local_guard": "Soft-stop and reposition safely; never hit, trap, or punish the learner.",
+        "success_condition": "Learner returns to approved cover."
+      },
+      "transitions": [
+        {"event": "SAFE_COVER_RESTORED", "to_state_id": "EQ-S-D04", "kind": "correction_return"}
+      ]
+    },
+    "EQ-S-D03": {
+      "state_id": "EQ-S-D03",
+      "kind": "correction",
+      "label": "Correct a glass or shelf approach",
+      "context_patch": {
+        "phase": "during",
+        "location_type": "indoors",
+        "location_zone": "CLASSROOM_A",
+        "learner_action": "approaching_glass_or_shelf",
+        "hazard_active": true,
+        "alarm_id": "SIM_EQ_SHAKING_CUE",
+        "shaking_active": true,
+        "approved_cover_reachable": true,
+        "near_falling_or_glass_hazard": true
+      },
+      "learner_actions": {
+        "permitted": ["MOVE_SHORT_DISTANCE_TO_APPROVED_COVER"],
+        "blocked": ["APPROACH_WINDOW", "APPROACH_SHELF", "TOUCH_FALLING_OBJECT"]
+      },
+      "calm": {
+        "invoke_on": ["STATE_ENTRY"],
+        "protocol_id": "EQ-DUR-002",
+        "action_code": "AVOID_FALLING_AND_GLASS_HAZARDS",
+        "expected_completion_code": "OK",
+        "enforce_protocol": true
+      },
+      "unity": {
+        "local_guard": "Block the hazard boundary and permit only a short safe move toward nearby cover.",
+        "success_condition": "Learner returns to approved cover."
+      },
+      "transitions": [
+        {"event": "SAFE_COVER_RESTORED", "to_state_id": "EQ-S-D04", "kind": "correction_return"}
+      ]
+    },
+    "EQ-S-D04": {
+      "state_id": "EQ-S-D04",
+      "kind": "main",
+      "label": "Remain protected until shaking stops",
+      "context_patch": {
+        "phase": "during",
+        "location_type": "indoors",
+        "location_zone": "CLASSROOM_A",
+        "learner_action": "holding_under_cover",
+        "hazard_active": true,
+        "alarm_id": "SIM_EQ_SHAKING_CUE",
+        "shaking_active": true,
+        "approved_cover_reachable": true
+      },
+      "learner_actions": {
+        "permitted": ["REMAIN_UNDER_COVER", "PROTECT_HEAD_AND_NECK"],
+        "blocked": ["LEAVE_COVER_EARLY", "RETRIEVE_BELONGINGS", "RUN_TO_EXIT"]
+      },
+      "calm": {
+        "invoke_on": ["LEARNER_RELEASES_HOLD", "ASK_CALM", "HINT_DELAY"],
+        "protocol_id": "EQ-DUR-001",
+        "action_code": "DROP_COVER_HOLD",
+        "expected_completion_code": "OK",
+        "enforce_protocol": true
+      },
+      "unity": {
+        "local_guard": "The scenario controller, never CALM, determines when shaking stops.",
+        "success_condition": "Trusted SHAKING_STOPPED event arrives while learner is protected."
+      },
+      "transitions": [
+        {"event": "SHAKING_STOPPED", "to_state_id": "EQ-S-A01", "kind": "progression"},
+        {"event": "RUN_TO_EXIT_ATTEMPTED", "to_state_id": "EQ-S-D02", "kind": "correction"},
+        {"event": "GLASS_OR_SHELF_APPROACH_ATTEMPTED", "to_state_id": "EQ-S-D03", "kind": "correction"}
+      ]
+    },
+    "EQ-S-A01": {
+      "state_id": "EQ-S-A01",
+      "kind": "main",
+      "label": "Wait for the teacher's evacuation instruction",
+      "context_patch": {
+        "phase": "after",
+        "location_type": "indoors",
+        "location_zone": "CLASSROOM_A",
+        "learner_action": "waiting_with_class"
+      },
+      "learner_actions": {
+        "permitted": ["STAY_WITH_CLASS", "LISTEN_TO_TEACHER", "ASK_CALM"],
+        "blocked": ["SELF_EVACUATE", "SELECT_ROUTE", "RUN_TO_EXIT", "RETRIEVE_BELONGINGS"]
+      },
+      "calm": {
+        "invoke_on": ["STATE_ENTRY", "ASK_CALM"],
+        "protocol_id": "EQ-AFT-007",
+        "action_code": "WAIT_FOR_SCHOOL_EVACUATION_INSTRUCTION",
+        "expected_completion_code": "OK",
+        "enforce_protocol": true
+      },
+      "unity": {
+        "local_guard": "Exit locomotion remains closed until an authenticated teacher-controller event.",
+        "success_condition": "Trusted teacher evacuation event is received."
+      },
+      "transitions": [
+        {"event": "TEACHER_EVACUATION_ORDERED", "to_state_id": "EQ-S-A02", "kind": "progression"}
+      ]
+    },
+    "EQ-S-A02": {
+      "state_id": "EQ-S-A02",
+      "kind": "main",
+      "label": "Resolve the teacher-led evacuation route",
+      "context_patch": {
+        "phase": "after",
+        "location_type": "indoors",
+        "location_zone": "CLASSROOM_A",
+        "learner_action": "forming_evacuation_line",
+        "alarm_id": "SIM_EQ_EVACUATE_CUE",
+        "safe_route_id": "ROUTE_CLASSROOM_A_PRIMARY",
+        "safe_zone_id": "ASSEMBLY_A",
+        "route_snapshot_id": "SIM_ROUTE_SNAPSHOT_EVAC_001",
+        "route_states": {
+          "ROUTE_CLASSROOM_A_PRIMARY": "BLOCKED",
+          "ROUTE_CLASSROOM_A_ALTERNATE": "OPEN"
+        },
+        "teacher_evacuate_instruction": true
+      },
+      "learner_actions": {
+        "permitted": ["FORM_CLASS_LINE", "FOLLOW_SELECTED_ROUTE"],
+        "blocked": ["RUN", "PUSH", "USE_ELEVATOR", "RETRIEVE_BELONGINGS", "ENTER_BLOCKED_ROUTE"]
+      },
+      "calm": {
+        "invoke_on": ["STATE_ENTRY", "ASK_CALM", "ROUTE_SNAPSHOT_CHANGED"],
+        "protocol_id": "EQ-AFT-001",
+        "action_code": "SCHOOL_EVACUATE_AFTER_SHAKING",
+        "expected_completion_code": "OK",
+        "enforce_protocol": true
+      },
+      "unity": {
+        "local_guard": "Unlock only response.selected_route_id when movement_authorized is true and the route snapshot is current.",
+        "success_condition": "Class line is formed and alternate route authorization is accepted."
+      },
+      "transitions": [
+        {"event": "AUTHORIZED_ROUTE_ACCEPTED", "to_state_id": "EQ-S-A03", "kind": "progression"},
+        {"event": "ROUTE_UNAVAILABLE_BEFORE_MOVEMENT", "to_state_id": "EQ-S-H01-NO-ROUTE", "kind": "safe_hold"}
+      ]
+    },
+    "EQ-S-A03": {
+      "state_id": "EQ-S-A03",
+      "kind": "main",
+      "label": "Traverse the authorized alternate route",
+      "context_patch": {
+        "phase": "after",
+        "location_type": "indoors",
+        "location_zone": "CLASSROOM_A",
+        "learner_action": "following_authorized_route",
+        "safe_route_id": "ROUTE_CLASSROOM_A_PRIMARY",
+        "safe_zone_id": "ASSEMBLY_A",
+        "route_snapshot_id": "SIM_ROUTE_SNAPSHOT_EVAC_001",
+        "route_states": {
+          "ROUTE_CLASSROOM_A_PRIMARY": "BLOCKED",
+          "ROUTE_CLASSROOM_A_ALTERNATE": "OPEN"
+        },
+        "teacher_evacuate_instruction": true
+      },
+      "learner_actions": {
+        "permitted": ["WALK_WITH_CLASS_ON_SELECTED_ROUTE", "ASK_CALM"],
+        "blocked": ["ENTER_PRIMARY_BLOCKED_ROUTE", "TAKE_SHORTCUT", "RUN", "LEAVE_CLASS"]
+      },
+      "calm": {
+        "invoke_on": ["ASK_CALM", "UNSAFE_ACTION", "ROUTE_SNAPSHOT_CHANGED"],
+        "protocol_id": "EQ-AFT-001",
+        "action_code": "SCHOOL_EVACUATE_AFTER_SHAKING",
+        "expected_completion_code": "OK",
+        "enforce_protocol": true
+      },
+      "unity": {
+        "local_guard": "Revoke movement immediately if the route snapshot changes.",
+        "success_condition": "Trusted ASSEMBLY_A trigger is reached."
+      },
+      "transitions": [
+        {"event": "ASSEMBLY_TRIGGER_REACHED", "to_state_id": "EQ-S-A04", "kind": "progression"},
+        {"event": "ROUTE_REVOKED", "to_state_id": "EQ-S-H01-NO-ROUTE", "kind": "safe_hold"}
+      ]
+    },
+    "EQ-S-H01-NO-ROUTE": {
+      "state_id": "EQ-S-H01-NO-ROUTE",
+      "kind": "safe_hold",
+      "label": "Hold safely when no approved route is open",
+      "context_patch": {
+        "phase": "after",
+        "location_type": "indoors",
+        "location_zone": "CLASSROOM_A",
+        "learner_action": "waiting_for_route_update",
+        "safe_route_id": "ROUTE_CLASSROOM_A_PRIMARY",
+        "safe_zone_id": "ASSEMBLY_A",
+        "route_snapshot_id": "SIM_ROUTE_SNAPSHOT_BLOCKED_001",
+        "route_states": {
+          "ROUTE_CLASSROOM_A_PRIMARY": "BLOCKED",
+          "ROUTE_CLASSROOM_A_ALTERNATE": "BLOCKED"
+        },
+        "teacher_evacuate_instruction": true
+      },
+      "learner_actions": {
+        "permitted": ["STAY_WITH_TEACHER", "WAIT_FOR_TRUSTED_ROUTE_UPDATE"],
+        "blocked": ["CHOOSE_OWN_EXIT", "ENTER_BLOCKED_ROUTE", "TAKE_SHORTCUT"]
+      },
+      "calm": {
+        "invoke_on": ["STATE_ENTRY", "ASK_CALM", "ROUTE_SNAPSHOT_CHANGED"],
+        "protocol_id": "EQ-AFT-001",
+        "action_code": "SCHOOL_EVACUATE_AFTER_SHAKING",
+        "expected_completion_code": "NO_APPROVED_OPEN_ROUTE",
+        "enforce_protocol": true
+      },
+      "unity": {
+        "local_guard": "Freeze evacuation in the current safe holding location with the teacher.",
+        "success_condition": "A new trusted snapshot provides a configured OPEN route."
+      },
+      "transitions": [
+        {"event": "ROUTE_UPDATED_FOR_FORMATION", "to_state_id": "EQ-S-A02", "kind": "safe_hold_return"},
+        {"event": "ROUTE_UPDATED_FOR_TRAVEL", "to_state_id": "EQ-S-A03", "kind": "safe_hold_return"}
+      ]
+    },
+    "EQ-S-A04": {
+      "state_id": "EQ-S-A04",
+      "kind": "main",
+      "label": "Stay at assembly for headcount",
+      "context_patch": {
+        "phase": "after",
+        "location_type": "outdoor",
+        "location_zone": "ASSEMBLY_A",
+        "learner_action": "waiting_for_headcount",
+        "safe_zone_id": "ASSEMBLY_A",
+        "at_assembly_area": true,
+        "headcount_active": true
+      },
+      "learner_actions": {
+        "permitted": ["STAY_WITH_CLASS", "ANSWER_TEACHER", "REPORT_CONCERN"],
+        "blocked": ["LEAVE_GROUP", "REENTER_BUILDING", "SEARCH_FOR_PERSON", "CONDUCT_HEADCOUNT"]
+      },
+      "calm": {
+        "invoke_on": ["STATE_ENTRY", "ASK_CALM"],
+        "protocol_id": "EQ-AFT-008",
+        "action_code": "SCHOOL_ASSEMBLY_HEADCOUNT",
+        "expected_completion_code": "OK",
+        "enforce_protocol": true
+      },
+      "unity": {
+        "local_guard": "Keep the learner inside the synthetic assembly boundary.",
+        "success_condition": "Scripted fictional missing-avatar prompt begins."
+      },
+      "transitions": [
+        {"event": "FICTIONAL_MISSING_AVATAR_PROMPTED", "to_state_id": "EQ-S-A05", "kind": "progression"}
+      ]
+    },
+    "EQ-S-A05": {
+      "state_id": "EQ-S-A05",
+      "kind": "main",
+      "label": "Report a fictional missing classmate",
+      "context_patch": {
+        "phase": "after",
+        "location_type": "outdoor",
+        "location_zone": "ASSEMBLY_A",
+        "learner_action": "reporting_missing_fictional_avatar",
+        "safe_zone_id": "ASSEMBLY_A",
+        "injury_or_missing_person_known": true,
+        "injury_or_missing_person_report_pending": true,
+        "at_assembly_area": true,
+        "headcount_active": true
+      },
+      "learner_actions": {
+        "permitted": ["REPORT_FICTIONAL_AVATAR_TO_TEACHER", "STAY_AT_ASSEMBLY"],
+        "blocked": ["SEARCH", "PERFORM_RESCUE", "REENTER_BUILDING", "GIVE_TREATMENT"]
+      },
+      "calm": {
+        "invoke_on": ["STATE_ENTRY", "ASK_CALM"],
+        "protocol_id": "EQ-AFT-005",
+        "action_code": "REPORT_INJURY_OR_MISSING_PERSON",
+        "expected_completion_code": "OK",
+        "enforce_protocol": true
+      },
+      "unity": {
+        "local_guard": "Use only a fictional NPC token; never send a real child identity.",
+        "success_condition": "Concern is handed to the teacher and report_pending is cleared."
+      },
+      "transitions": [
+        {"event": "REPORT_HANDED_TO_TEACHER_AND_AFTERSHOCK_STARTED", "to_state_id": "EQ-S-A06", "kind": "progression"}
+      ]
+    },
+    "EQ-S-A06": {
+      "state_id": "EQ-S-A06",
+      "kind": "main",
+      "label": "Protect again during an assembly-area aftershock",
+      "context_patch": {
+        "phase": "after",
+        "location_type": "outdoor",
+        "location_zone": "ASSEMBLY_A",
+        "learner_action": "protecting_during_aftershock",
+        "hazard_active": true,
+        "safe_zone_id": "ASSEMBLY_A",
+        "shaking_active": true,
+        "aftershock_active": true,
+        "injury_or_missing_person_known": true,
+        "injury_or_missing_person_report_pending": false,
+        "at_assembly_area": true,
+        "headcount_active": false
+      },
+      "learner_actions": {
+        "permitted": ["STOP", "PROTECT_HEAD_AND_NECK", "REMAIN_IN_OPEN_ZONE"],
+        "blocked": ["RUN_TO_BUILDING", "APPROACH_WALL", "APPROACH_TREE", "APPROACH_POWER_LINE"]
+      },
+      "calm": {
+        "invoke_on": ["STATE_ENTRY", "ASK_CALM"],
+        "protocol_id": "EQ-AFT-006",
+        "action_code": "REPROTECT_DURING_AFTERSHOCK",
+        "expected_completion_code": "OK",
+        "enforce_protocol": true
+      },
+      "unity": {
+        "local_guard": "Pause headcount and movement; keep the learner in the approved open zone.",
+        "success_condition": "Trusted AFTERSHOCK_STOPPED arrives while learner is protected."
+      },
+      "transitions": [
+        {"event": "AFTERSHOCK_STOPPED", "to_state_id": "EQ-S-A04R", "kind": "progression"}
+      ]
+    },
+    "EQ-S-A04R": {
+      "state_id": "EQ-S-A04R",
+      "kind": "main",
+      "label": "Resume the interrupted headcount",
+      "context_patch": {
+        "phase": "after",
+        "location_type": "outdoor",
+        "location_zone": "ASSEMBLY_A",
+        "learner_action": "resuming_headcount",
+        "safe_zone_id": "ASSEMBLY_A",
+        "injury_or_missing_person_known": true,
+        "injury_or_missing_person_report_pending": false,
+        "at_assembly_area": true,
+        "headcount_active": true
+      },
+      "learner_actions": {
+        "permitted": ["STAY_WITH_CLASS", "ANSWER_TEACHER"],
+        "blocked": ["LEAVE_GROUP", "REENTER_BUILDING", "SEARCH_FOR_PERSON"]
+      },
+      "calm": {
+        "invoke_on": ["STATE_ENTRY", "ASK_CALM"],
+        "protocol_id": "EQ-AFT-008",
+        "action_code": "SCHOOL_ASSEMBLY_HEADCOUNT",
+        "expected_completion_code": "OK",
+        "enforce_protocol": true
+      },
+      "unity": {
+        "local_guard": "Resume headcount; the fictional concern remains with staff, not the learner.",
+        "success_condition": "Trusted HEADCOUNT_COMPLETED event is received."
+      },
+      "transitions": [
+        {"event": "HEADCOUNT_COMPLETED", "to_state_id": "EQ-S-A07", "kind": "progression"}
+      ]
+    },
+    "EQ-S-A07": {
+      "state_id": "EQ-S-A07",
+      "kind": "main",
+      "label": "Reject re-entry before clearance",
+      "context_patch": {
+        "phase": "after",
+        "location_type": "outdoor",
+        "location_zone": "ASSEMBLY_A",
+        "learner_action": "attempt_reentry",
+        "safe_zone_id": "ASSEMBLY_A",
+        "structure_damaged_or_not_cleared": true,
+        "learner_attempting_reentry": true,
+        "injury_or_missing_person_known": true,
+        "injury_or_missing_person_report_pending": false,
+        "at_assembly_area": true,
+        "headcount_active": false
+      },
+      "learner_actions": {
+        "permitted": ["STAY_WITH_CLASS", "ASK_CALM"],
+        "blocked": ["REENTER_STRUCTURE", "RETRIEVE_BELONGINGS", "PERFORM_RESCUE"]
+      },
+      "calm": {
+        "invoke_on": ["REENTRY_ATTEMPT", "ASK_CALM"],
+        "protocol_id": "EQ-AFT-004",
+        "action_code": "NO_REENTRY_DAMAGED_STRUCTURE",
+        "expected_completion_code": "OK",
+        "enforce_protocol": true
+      },
+      "unity": {
+        "local_guard": "Block the entrance locally and use a calm retry; never injure or trap the learner.",
+        "success_condition": "Learner stays with the class and abandons re-entry."
+      },
+      "transitions": [
+        {"event": "REENTRY_CORRECTED", "to_state_id": "EQ-S-END", "kind": "progression"}
+      ]
+    },
+    "EQ-S-END": {
+      "state_id": "EQ-S-END",
+      "kind": "terminal",
+      "label": "Mission complete",
+      "context_patch": {
+        "phase": "after",
+        "location_type": "outdoor",
+        "location_zone": "ASSEMBLY_A",
+        "learner_action": "mission_complete",
+        "safe_zone_id": "ASSEMBLY_A",
+        "injury_or_missing_person_known": true,
+        "injury_or_missing_person_report_pending": false,
+        "at_assembly_area": true,
+        "headcount_active": false,
+        "mission_complete": true
+      },
+      "learner_actions": {
+        "permitted": ["VIEW_LOCAL_SUMMARY"],
+        "blocked": ["CALL_CALM_RESPOND", "SIMULATE_REUNIFICATION"]
+      },
+      "calm": {
+        "invoke_on": [],
+        "protocol_id": null,
+        "action_code": null,
+        "expected_completion_code": null,
+        "enforce_protocol": false
+      },
+      "unity": {
+        "local_guard": "Do not call /api/v1/respond; show only a local, non-identifying completion summary.",
+        "success_condition": "Mission is complete."
+      },
+      "transitions": []
+    }
+  }
+}

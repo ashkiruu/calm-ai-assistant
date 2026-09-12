@@ -1,0 +1,25 @@
+{
+  "schema_version": "1.0",
+  "protocol_cards": 47,
+  "review_candidate_units": 141,
+  "runtime_units": 0,
+  "locales": [
+    "en-PH",
+    "fil-PH",
+    "taglish-PH"
+  ],
+  "lifecycle_unit_counts": {
+    "EVIDENCE_LINKED": 132,
+    "NEEDS_CURRENT_SOURCE": 9
+  },
+  "production_gate": "runtime_units.jsonl contains only RUNTIME_APPROVED cards. It is intentionally empty until external approvals are recorded.",
+  "excluded_from_embedding_text": [
+    "author and contributor names",
+    "addresses and static contact numbers",
+    "acknowledgements",
+    "legal and navigation boilerplate",
+    "raw PDF paragraphs",
+    "adult-only operational instructions",
+    "unresolved conflicting claims"
+  ]
+}

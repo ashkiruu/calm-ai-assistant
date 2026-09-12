@@ -1,0 +1,44 @@
+{"question": "What should I do now?", "task_id": "eq_home_6_dch", "locale": "en-PH", "expected_scope": "on_task"}
+{"question": "Why do I have to hold on?", "task_id": "eq_home_6_dch", "locale": "en-PH", "expected_scope": "on_task"}
+{"question": "Ano ang gagawin ko?", "task_id": "eq_sch_4_dch", "locale": "fil-PH", "expected_scope": "on_task"}
+{"question": "Saan ako pupunta?", "task_id": "eq_out_2_open", "locale": "fil-PH", "expected_scope": "on_task"}
+{"question": "Safe ba ako dito?", "task_id": "fire_home_5_exit", "locale": "taglish-PH", "expected_scope": "on_task"}
+{"question": "Which exit should I use?", "task_id": "fire_sch_4_line", "locale": "en-PH", "expected_scope": "on_task"}
+{"question": "Why stay away from windows?", "task_id": "typ_home_5_center", "locale": "en-PH", "expected_scope": "on_task"}
+{"question": "Ligtas ba ang lugar na ito?", "task_id": "typ_sch_5_center", "locale": "fil-PH", "expected_scope": "on_task"}
+{"question": "Should I stay inside?", "task_id": "typ_out_3_high", "locale": "en-PH", "expected_scope": "on_task"}
+{"question": "How do I prepare for a typhoon?", "task_id": "typ_home_1_pack", "locale": "en-PH", "expected_scope": "on_task"}
+{"question": "Paano maghanda bago ang bagyo?", "task_id": "typ_sch_1_books", "locale": "fil-PH", "expected_scope": "on_task"}
+{"question": "Anong exit ang gagamitin ko?", "task_id": "fire_sch_1_exit", "locale": "taglish-PH", "expected_scope": "on_task"}
+{"question": "What do I do after the shaking stops?", "task_id": "eq_home_6_dch", "locale": "en-PH", "expected_scope": "in_hazard_off_task"}
+{"question": "Ano ang gagawin pagkatapos ng lindol?", "task_id": "eq_sch_4_dch", "locale": "fil-PH", "expected_scope": "in_hazard_off_task"}
+{"question": "What happens after the shaking?", "task_id": "eq_out_3_low", "locale": "en-PH", "expected_scope": "in_hazard_off_task"}
+{"question": "Ano ang gagawin after ng sunog?", "task_id": "fire_home_4_low", "locale": "taglish-PH", "expected_scope": "in_hazard_off_task"}
+{"question": "What do I do after the storm?", "task_id": "typ_home_5_center", "locale": "en-PH", "expected_scope": "in_hazard_off_task"}
+{"question": "Paano maghanda bago dumating ang bagyo?", "task_id": "typ_sch_6_listen", "locale": "fil-PH", "expected_scope": "in_hazard_off_task"}
+{"question": "How should I get ready for an earthquake?", "task_id": "eq_home_7_out", "locale": "en-PH", "expected_scope": "in_hazard_off_task"}
+{"question": "What should I do during the fire?", "task_id": "fire_home_1_spot", "locale": "en-PH", "expected_scope": "in_hazard_off_task"}
+{"question": "What if there is a fire?", "task_id": "eq_home_6_dch", "locale": "en-PH", "expected_scope": "cross_hazard"}
+{"question": "Paano kung may sunog?", "task_id": "eq_sch_4_dch", "locale": "fil-PH", "expected_scope": "cross_hazard"}
+{"question": "Paano kung may sunog dito?", "task_id": "eq_home_1_spot", "locale": "taglish-PH", "expected_scope": "cross_hazard"}
+{"question": "What if there is a fire at school?", "task_id": "eq_sch_1_map", "locale": "en-PH", "expected_scope": "cross_hazard"}
+{"question": "What about an earthquake?", "task_id": "fire_home_5_exit", "locale": "en-PH", "expected_scope": "cross_hazard"}
+{"question": "Ano kung may lindol?", "task_id": "fire_sch_3_cloth", "locale": "fil-PH", "expected_scope": "cross_hazard"}
+{"question": "What if there is an earthquake?", "task_id": "fire_home_1_spot", "locale": "en-PH", "expected_scope": "cross_hazard"}
+{"question": "Paano kung may lindol habang nasa school?", "task_id": "fire_sch_2_paper", "locale": "taglish-PH", "expected_scope": "cross_hazard"}
+{"question": "What if a typhoon comes?", "task_id": "eq_home_6_dch", "locale": "en-PH", "expected_scope": "cross_hazard"}
+{"question": "Paano kung may bagyo?", "task_id": "eq_home_3_box", "locale": "fil-PH", "expected_scope": "cross_hazard"}
+{"question": "What if there is a flood?", "task_id": "fire_sch_1_exit", "locale": "en-PH", "expected_scope": "cross_hazard"}
+{"question": "What about a fire?", "task_id": "typ_home_5_center", "locale": "en-PH", "expected_scope": "cross_hazard"}
+{"question": "Paano kung may sunog sa bahay?", "task_id": "typ_home_1_pack", "locale": "fil-PH", "expected_scope": "cross_hazard"}
+{"question": "What if there is an earthquake now?", "task_id": "typ_sch_5_center", "locale": "en-PH", "expected_scope": "cross_hazard"}
+{"question": "Ano kung may lindol ngayon?", "task_id": "typ_sch_1_books", "locale": "taglish-PH", "expected_scope": "cross_hazard"}
+{"question": "Do earthquakes happen a lot?", "task_id": "typ_home_1_pack", "locale": "en-PH", "expected_scope": "cross_hazard"}
+{"question": "What is seven times eight?", "task_id": "eq_home_6_dch", "locale": "en-PH", "expected_scope": "out_of_scope"}
+{"question": "Who is the best basketball player?", "task_id": "eq_home_1_spot", "locale": "en-PH", "expected_scope": "out_of_scope"}
+{"question": "Can you sing me a song?", "task_id": "fire_home_5_exit", "locale": "en-PH", "expected_scope": "out_of_scope"}
+{"question": "Sino ang paborito mong artista?", "task_id": "fire_sch_1_exit", "locale": "fil-PH", "expected_scope": "out_of_scope"}
+{"question": "Ano ang paborito mong pagkain?", "task_id": "typ_home_1_pack", "locale": "fil-PH", "expected_scope": "out_of_scope"}
+{"question": "Pwede mo ba akong bilhan ng laruan?", "task_id": "typ_sch_1_books", "locale": "taglish-PH", "expected_scope": "out_of_scope"}
+{"question": "What is the capital of Japan?", "task_id": "typ_home_5_center", "locale": "en-PH", "expected_scope": "out_of_scope"}
+{"question": "Tell me a funny joke please.", "task_id": "eq_sch_4_dch", "locale": "en-PH", "expected_scope": "out_of_scope"}

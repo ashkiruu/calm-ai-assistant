@@ -1,0 +1,504 @@
+[
+  {
+    "protocol_id": "TYP-BEF-001",
+    "action_code": "FOLLOW_OFFICIAL_WEATHER_INFORMATION",
+    "title": "Use official typhoon information",
+    "hazard": "typhoon",
+    "settings": ["home", "school", "outdoor"],
+    "phase": "before",
+    "required_context": ["hazard == typhoon", "phase == before"],
+    "trigger_events": ["mission_started", "learner_asks_about_warning", "unverified_warning_presented"],
+    "objective": "Teach the learner to use official information without pretending CALM has live data.",
+    "ordered_actions": ["Check the authenticated PAGASA, school, LGU, barangay, teacher, or guardian update.", "Follow the instruction for the learner's actual location.", "Ask a responsible adult when the message is unclear."],
+    "prohibited_actions": ["Do not trust or forward an unverified post or message.", "Do not ask the static corpus for the current signal."],
+    "adult_handoff": "A teacher, guardian, or local authority interprets the current warning and route.",
+    "rationale": "The static knowledge base cannot verify a live storm signal or evacuation order.",
+    "criticality": "P1_IMPORTANT",
+    "priority": 80,
+    "safe_default": "Ask the teacher or guardian for the authenticated current update.",
+    "blocks_action_codes": ["CLAIM_LIVE_TCWS", "FOLLOW_UNVERIFIED_POST"],
+    "language": {
+      "en-PH": {"short": "Use an official weather update.", "instruction": "Check PAGASA or the verified school, LGU, barangay, teacher, or guardian message. Ask an adult if it is unclear."},
+      "fil-PH": {"short": "Gumamit ng opisyal na ulat-panahon.", "instruction": "Tingnan ang PAGASA o beripikadong mensahe ng paaralan, LGU, barangay, guro, o tagapag-alaga. Magtanong kung hindi malinaw."},
+      "taglish-PH": {"short": "Use an official weather update.", "instruction": "Check PAGASA or the verified school, LGU, barangay, teacher, or guardian message. Ask an adult kung unclear."}
+    },
+    "source_claims": [
+      {"source_id": "phivolcs-project-maghanda-broadcasters-manual-2022", "locator": "PDF pages 9-10", "pages": [9, 10], "disposition": "KEEP_EXACT"},
+      {"source_id": "unicef-ph-typhoon", "locator": "PDF pages 8-10", "pages": [8, 9, 10], "disposition": "KEEP_EXACT"},
+      {"source_id": "pagasa-tcws-current-web", "locator": "Current TCWS learning page", "pages": [], "disposition": "BACKGROUND_ONLY"}
+    ],
+    "conflict_ids": ["CF-001", "CF-012"]
+  },
+  {
+    "protocol_id": "TYP-BEF-002",
+    "action_code": "KNOW_HOME_TYPHOON_PLAN_AND_GO_BAG",
+    "title": "Know the home plan and child-safe go-bag items",
+    "hazard": "typhoon",
+    "settings": ["home"],
+    "phase": "before",
+    "required_context": ["hazard == typhoon", "phase == before", "location == home"],
+    "trigger_events": ["learner_asks_how_to_prepare", "go_bag_activity_started"],
+    "objective": "Give the learner a safe preparation role without adult-controlled items.",
+    "ordered_actions": ["Know the family route and meeting place.", "With a guardian check water, ready-to-eat food, clothing, flashlight, whistle, radio, rain gear, blanket, hygiene items, and a comfort item.", "Keep the bag accessible without blocking an exit."],
+    "prohibited_actions": ["Do not handle matches, lighters, candles, knives, medicine, cash, legal records, fuel, or chemicals.", "Do not retrieve the bag if evacuation has started or the route is unsafe."],
+    "adult_handoff": "The guardian controls medicine, documents, money, hazardous items, and the decision to take the bag.",
+    "rationale": "Preparation can be age-appropriate only when custody and evacuation timing are explicit.",
+    "criticality": "P2_EDUCATIONAL",
+    "priority": 45,
+    "safe_default": "Prepare only with a guardian and never delay evacuation for the bag.",
+    "blocks_action_codes": ["HANDLE_MATCH", "HANDLE_MEDICINE", "RETRIEVE_GO_BAG_DURING_EVACUATION"],
+    "language": {
+      "en-PH": {"short": "Prepare the go-bag with a guardian.", "instruction": "Check child-safe supplies and the family route. Never handle hazardous items or delay evacuation to get the bag."},
+      "fil-PH": {"short": "Ihanda ang go-bag kasama ang tagapag-alaga.", "instruction": "Suriin ang ligtas na supplies at ruta ng pamilya. Huwag humawak ng delikadong gamit o maantala ang paglikas para kunin ang bag."},
+      "taglish-PH": {"short": "Prepare the go-bag with a guardian.", "instruction": "Check child-safe supplies and the family route. Never handle hazardous items or delay evacuation para kunin ang bag."}
+    },
+    "source_claims": [
+      {"source_id": "unicef-ph-typhoon", "locator": "PDF pages 3-8", "pages": [3, 4, 5, 6, 7, 8], "disposition": "SIMPLIFY"},
+      {"source_id": "phivolcs-project-maghanda-broadcasters-manual-2022", "locator": "PDF page 9", "pages": [9], "disposition": "SIMPLIFY"}
+    ],
+    "conflict_ids": ["CF-009", "CF-010"]
+  },
+  {
+    "protocol_id": "TYP-BEF-003",
+    "action_code": "KNOW_SCHOOL_WARNING_ROUTE_AND_REUNIFICATION",
+    "title": "Know the school typhoon plan",
+    "hazard": "typhoon",
+    "settings": ["school"],
+    "phase": "before",
+    "required_context": ["hazard == typhoon", "phase == before", "location == school"],
+    "trigger_events": ["mission_started", "learner_asks_about_school_plan"],
+    "objective": "Prepare the learner to recognize the local school warning and approved movement plan.",
+    "ordered_actions": ["Learn the school warning or teacher cue.", "Know the approved safe room, exit route, and reunification or assembly point.", "Join drills and ask questions before an emergency."],
+    "prohibited_actions": ["Do not invent a route from a national document.", "Do not treat a school ground-marker color as a PAGASA warning color."],
+    "adult_handoff": "The school and local DRRMO approve the route, rooms, cues, and reunification plan.",
+    "rationale": "DepEd policy requires school-specific early warning, mapping, drills, and reunification.",
+    "criticality": "P2_EDUCATIONAL",
+    "priority": 45,
+    "safe_default": "Ask the teacher for the school's approved plan.",
+    "blocks_action_codes": ["INFER_LOCAL_ROUTE", "MAP_LOCAL_MARKER_TO_PAGASA"],
+    "language": {
+      "en-PH": {"short": "Know your school's warning and route.", "instruction": "Learn the approved safe room, exit, and reunification point from your teacher and practise the drill."},
+      "fil-PH": {"short": "Alamin ang babala at ruta ng paaralan.", "instruction": "Alamin sa guro ang itinakdang safe room, labasan, at reunification point at sanayin ang drill."},
+      "taglish-PH": {"short": "Know your school's warning and route.", "instruction": "Learn the approved safe room, exit, and reunification point from your teacher, then practise the drill."}
+    },
+    "source_claims": [
+      {"source_id": "deped-do-033-s2021-typhoon-flood-school-preparedness", "locator": "PDF pages 7-9 and 26-27", "pages": [7, 8, 9, 26, 27], "disposition": "BACKGROUND_ONLY"},
+      {"source_id": "lrmds-sdrr-manual-book-1", "locator": "PDF pages 21-22", "pages": [21, 22], "disposition": "BACKGROUND_ONLY"}
+    ],
+    "conflict_ids": ["CF-014", "CF-020"]
+  },
+  {
+    "protocol_id": "TYP-BEF-004",
+    "action_code": "RETURN_TO_APPROVED_SHELTER_EARLY",
+    "title": "Leave outdoor danger before typhoon conditions worsen",
+    "hazard": "typhoon",
+    "settings": ["outdoor"],
+    "phase": "before",
+    "required_context": ["hazard == typhoon", "phase == before", "location == outdoor", "authenticated_prepare_or_return_instruction == true"],
+    "trigger_events": ["official_prepare_instruction_received", "teacher_or_guardian_calls_learner_inside"],
+    "objective": "Move the learner into an approved shelter before wind rain or flooding blocks the route.",
+    "ordered_actions": ["Stop outdoor play or travel.", "Follow the responsible adult and approved route.", "Enter the approved shelter before conditions worsen."],
+    "prohibited_actions": ["Do not stay to watch the storm.", "Do not take a shortcut near a river, coast, tree, post, or flood-prone area."],
+    "adult_handoff": "A responsible adult selects the local safe route and shelter.",
+    "rationale": "Early movement reduces exposure to rising water, windborne objects, and falling hazards.",
+    "criticality": "P1_IMPORTANT",
+    "priority": 86,
+    "safe_default": "Follow the responsible adult to the approved shelter.",
+    "blocks_action_codes": ["WATCH_STORM_OUTSIDE", "USE_UNAPPROVED_SHORTCUT"],
+    "language": {
+      "en-PH": {"short": "Go to the approved shelter with an adult.", "instruction": "Stop outdoor activity and use the approved route before wind, rain, or floodwater gets worse."},
+      "fil-PH": {"short": "Pumunta sa itinakdang silungan kasama ang nakatatanda.", "instruction": "Itigil ang gawain sa labas at sundin ang tamang ruta bago lumakas ang hangin, ulan, o baha."},
+      "taglish-PH": {"short": "Go to the approved shelter with an adult.", "instruction": "Stop outdoor activity and use the approved route bago lumakas ang wind, rain, o floodwater."}
+    },
+    "source_claims": [
+      {"source_id": "phivolcs-project-maghanda-broadcasters-manual-2022", "locator": "PDF page 9", "pages": [9], "disposition": "SIMPLIFY"},
+      {"source_id": "ocd-disaster-preparedness-guidebook", "locator": "PDF pages 3-5", "pages": [3, 4, 5], "disposition": "SIMPLIFY"}
+    ],
+    "conflict_ids": ["CF-020"]
+  },
+  {
+    "protocol_id": "TYP-BEF-005",
+    "action_code": "OBEY_AUTHENTICATED_EVACUATION_ORDER",
+    "title": "Evacuate when an authenticated order is given",
+    "hazard": "typhoon",
+    "settings": ["home", "school", "outdoor"],
+    "phase": "before",
+    "required_context": ["hazard == typhoon", "authenticated_evacuation_order == true", "approved_route_available == true"],
+    "trigger_events": ["evacuation_order_received", "teacher_or_guardian_begins_evacuation"],
+    "context_sources": ["trusted_vr_state", "authenticated_authority_state"],
+    "objective": "Make an official evacuation order override generic shelter advice.",
+    "ordered_actions": ["Stay with the responsible adult or class.", "Use the approved evacuation route.", "Go directly to the assigned evacuation or assembly area."],
+    "prohibited_actions": ["Do not wait for conditions to get worse.", "Do not retrieve belongings if that delays evacuation.", "Do not enter floodwater or use an unapproved route."],
+    "adult_handoff": "The authority, school, or guardian controls the order and route.",
+    "rationale": "An authenticated evacuation order must deterministically supersede a normal stay-inside card.",
+    "criticality": "P0_CRITICAL",
+    "priority": 100,
+    "safe_default": "Follow the responsible adult on the approved route.",
+    "blocks_action_codes": ["SHELTER_IN_PLACE_GENERIC", "RETRIEVE_BELONGINGS", "ENTER_FLOODWATER"],
+    "language": {
+      "en-PH": {"short": "Evacuate now with your adult or class.", "instruction": "Use the approved route and go straight to the assigned safe area. Leave belongings if they would delay you."},
+      "fil-PH": {"short": "Lumikas ngayon kasama ang nakatatanda o klase.", "instruction": "Sundin ang tamang ruta at dumiretso sa itinakdang ligtas na lugar. Iwan ang gamit kung makaaantala ito."},
+      "taglish-PH": {"short": "Evacuate now with your adult or class.", "instruction": "Use the approved route and go straight to the assigned safe area. Leave belongings kung makaka-delay."}
+    },
+    "source_claims": [
+      {"source_id": "unicef-ph-typhoon", "locator": "PDF pages 8-9", "pages": [8, 9], "disposition": "KEEP_EXACT"},
+      {"source_id": "phivolcs-project-maghanda-broadcasters-manual-2022", "locator": "PDF page 9", "pages": [9], "disposition": "KEEP_EXACT"},
+      {"source_id": "ocd-disaster-preparedness-guidebook", "locator": "PDF pages 3-5", "pages": [3, 4, 5], "disposition": "KEEP_EXACT"}
+    ],
+    "conflict_ids": ["CF-011", "CF-020"]
+  },
+  {
+    "protocol_id": "TYP-DUR-001",
+    "action_code": "SHELTER_AWAY_FROM_WINDOWS",
+    "title": "Shelter away from windows during a typhoon",
+    "hazard": "typhoon",
+    "settings": ["home", "school"],
+    "phase": "during",
+    "required_context": ["hazard == typhoon", "phase == during", "location == indoors", "authenticated_evacuation_order == false", "current_shelter_approved == true"],
+    "trigger_events": ["strong_wind_or_rain_active", "learner_approaches_window"],
+    "objective": "Keep the learner in an approved indoor area away from glass when no evacuation order is active.",
+    "ordered_actions": ["Stay calm in the approved safe area.", "Keep away from windows and glass.", "Listen to the teacher, guardian, or authenticated update."],
+    "prohibited_actions": ["Do not go outside to watch or record the storm.", "Do not stand near windows.", "Do not ignore a later evacuation order."],
+    "adult_handoff": "A teacher, guardian, or authority decides whether sheltering continues.",
+    "rationale": "Shelter guidance is valid only while the location remains approved and no evacuation order supersedes it.",
+    "criticality": "P0_CRITICAL",
+    "priority": 95,
+    "safe_default": "Stay in the approved area away from windows.",
+    "blocks_action_codes": ["APPROACH_WINDOW", "GO_OUTSIDE_TO_WATCH"],
+    "language": {
+      "en-PH": {"short": "Stay in the safe area away from windows.", "instruction": "Remain calm and listen to your teacher, guardian, or verified update. Follow an evacuation order if one is given."},
+      "fil-PH": {"short": "Manatili sa ligtas na lugar na malayo sa bintana.", "instruction": "Maging mahinahon at makinig sa guro, tagapag-alaga, o beripikadong abiso. Sumunod kung may utos na lumikas."},
+      "taglish-PH": {"short": "Stay in the safe area away from windows.", "instruction": "Remain calm and listen to your teacher, guardian, or verified update. Follow the evacuation order kung meron."}
+    },
+    "source_claims": [
+      {"source_id": "phivolcs-project-maghanda-broadcasters-manual-2022", "locator": "PDF page 10", "pages": [10], "disposition": "KEEP_EXACT"},
+      {"source_id": "unicef-ph-typhoon", "locator": "PDF page 9", "pages": [9], "disposition": "KEEP_EXACT"},
+      {"source_id": "ocd-disaster-preparedness-guidebook", "locator": "PDF page 3", "pages": [3], "disposition": "KEEP_EXACT"}
+    ],
+    "conflict_ids": ["CF-011"]
+  },
+  {
+    "protocol_id": "TYP-DUR-002",
+    "action_code": "FOLLOW_TEACHER_TYPHOON_INSTRUCTION",
+    "title": "Follow the teacher during school typhoon response",
+    "hazard": "typhoon",
+    "settings": ["school"],
+    "phase": "during",
+    "required_context": ["hazard == typhoon", "phase == during", "location == school"],
+    "trigger_events": ["teacher_instruction_given", "school_warning_active"],
+    "objective": "Keep the learner with the class under the localized school plan.",
+    "ordered_actions": ["Listen to the teacher.", "Move or shelter with the class as directed.", "Stay at the assigned safe area for headcount."],
+    "prohibited_actions": ["Do not leave the class, use a shortcut, or go home alone.", "Do not touch flood markers, electrical equipment, or school utilities."],
+    "adult_handoff": "School staff implement the DepEd and local DRRMO plan.",
+    "rationale": "National policy defines school responsibilities but the actual movement plan is local.",
+    "criticality": "P0_CRITICAL",
+    "priority": 96,
+    "safe_default": "Stay with the teacher and class.",
+    "blocks_action_codes": ["LEAVE_CLASS", "GO_HOME_ALONE", "OPERATE_UTILITY"],
+    "language": {
+      "en-PH": {"short": "Stay with your teacher and class.", "instruction": "Shelter or move only as your teacher directs, then remain at the assigned safe area for headcount."},
+      "fil-PH": {"short": "Manatili kasama ang guro at klase.", "instruction": "Sumilong o lumipat ayon lamang sa utos ng guro, saka manatili sa itinakdang safe area para sa bilang."},
+      "taglish-PH": {"short": "Stay with your teacher and class.", "instruction": "Shelter or move only as your teacher directs, then stay sa assigned safe area for headcount."}
+    },
+    "source_claims": [
+      {"source_id": "deped-do-033-s2021-typhoon-flood-school-preparedness", "locator": "PDF pages 7-9", "pages": [7, 8, 9], "disposition": "BACKGROUND_ONLY"},
+      {"source_id": "unicef-ph-typhoon", "locator": "PDF page 9", "pages": [9], "disposition": "SIMPLIFY"}
+    ],
+    "conflict_ids": ["CF-014", "CF-020"]
+  },
+  {
+    "protocol_id": "TYP-DUR-003",
+    "action_code": "OUTDOOR_REACH_APPROVED_TYPHOON_SHELTER",
+    "title": "Reach approved shelter from outdoors",
+    "hazard": "typhoon",
+    "settings": ["outdoor"],
+    "phase": "during",
+    "required_context": ["hazard == typhoon", "phase == during", "location == outdoor", "trusted_safe_route_available == true"],
+    "trigger_events": ["learner_outdoors_in_wind_or_rain", "responsible_adult_directs_to_shelter"],
+    "objective": "Move the learner off an exposed outdoor route without crossing flood or overhead hazards.",
+    "ordered_actions": ["Stay with the responsible adult.", "Use only the trusted route to the approved sturdy shelter.", "Keep away from rivers, shores, trees, posts, signs, power lines, and floodwater."],
+    "prohibited_actions": ["Do not shelter under a tree, light structure, waiting shed, or tent unless the scenario authority specifically approves it.", "Do not cross floodwater."],
+    "adult_handoff": "A local authority or responsible adult selects the route and shelter.",
+    "rationale": "Outdoor typhoon safety depends on the trusted local route and shelter state.",
+    "criticality": "P0_CRITICAL",
+    "priority": 100,
+    "safe_default": "Stay with the adult and use only the trusted route.",
+    "blocks_action_codes": ["SHELTER_UNDER_TREE", "ENTER_FLOODWATER", "USE_UNAPPROVED_ROUTE"],
+    "language": {
+      "en-PH": {"short": "Stay with the adult and use the approved shelter route.", "instruction": "Keep away from floodwater, rivers, shores, trees, posts, signs, and power lines."},
+      "fil-PH": {"short": "Manatili sa nakatatanda at sundin ang tamang ruta sa silungan.", "instruction": "Lumayo sa baha, ilog, dalampasigan, puno, poste, karatula, at linya ng kuryente."},
+      "taglish-PH": {"short": "Stay with the adult and use the approved shelter route.", "instruction": "Keep away from floodwater, rivers, shores, trees, posts, signs, at power lines."}
+    },
+    "source_claims": [
+      {"source_id": "phivolcs-project-maghanda-broadcasters-manual-2022", "locator": "PDF pages 9-10 and 23", "pages": [9, 10, 23], "disposition": "SIMPLIFY"},
+      {"source_id": "ocd-disaster-preparedness-guidebook", "locator": "PDF pages 3-5", "pages": [3, 4, 5], "disposition": "SIMPLIFY"}
+    ],
+    "conflict_ids": ["CF-020"],
+    "review_notes": "Exact route and shelter require deployment-specific school or local DRRMO approval."
+  },
+  {
+    "protocol_id": "TYP-DUR-004",
+    "action_code": "NEVER_ENTER_FLOODWATER",
+    "title": "Do not enter floodwater",
+    "hazard": "typhoon",
+    "secondary_hazards": ["flood", "contamination", "electrical_hazard"],
+    "settings": ["home", "school", "outdoor"],
+    "phase": "during",
+    "required_context": ["hazard == typhoon", "phase == during", "floodwater_present == true"],
+    "trigger_events": ["learner_approaches_floodwater", "learner_asks_to_cross", "route_becomes_flooded"],
+    "objective": "Prevent entry into floodwater at any depth.",
+    "ordered_actions": ["Stop before the water.", "Move back to the approved dry safe area.", "Tell a teacher, guardian, or responder that the route is flooded.", "Wait for a new approved route."],
+    "prohibited_actions": ["Do not walk, wade, swim, play, boat, or drive through floodwater.", "Do not use water depth as proof that crossing is safe."],
+    "adult_handoff": "A local authority or responder selects a safe route or rescue.",
+    "rationale": "Depth, current, contamination, holes, debris, and electricity may be hidden.",
+    "criticality": "P0_CRITICAL",
+    "priority": 100,
+    "safe_default": "Stay out of the water and report the blocked route.",
+    "blocks_action_codes": ["ENTER_FLOODWATER", "CROSS_FLOOD", "SWIM_IN_FLOOD"],
+    "language": {
+      "en-PH": {"short": "Stop—do not enter the floodwater.", "instruction": "Move back to the approved dry safe area, tell an adult the route is flooded, and wait for a new route."},
+      "fil-PH": {"short": "Huminto—huwag lumusong sa baha.", "instruction": "Bumalik sa itinakdang tuyong ligtas na lugar, sabihin sa nakatatanda na baha ang ruta, at maghintay ng bagong daan."},
+      "taglish-PH": {"short": "Stop—do not enter the floodwater.", "instruction": "Move back to the approved dry safe area, tell an adult na flooded ang route, at wait for a new route."}
+    },
+    "source_claims": [
+      {"source_id": "phivolcs-project-maghanda-broadcasters-manual-2022", "locator": "PDF page 23", "pages": [23], "disposition": "KEEP_EXACT"},
+      {"source_id": "ocd-disaster-preparedness-guidebook", "locator": "PDF page 5", "pages": [5], "disposition": "CONFLICT_REVIEW"},
+      {"source_id": "pagasa-floods-web", "locator": "Flood countermeasures and safety-rules sections", "pages": [], "disposition": "CONFLICT_REVIEW"}
+    ],
+    "conflict_ids": ["CF-005"]
+  },
+  {
+    "protocol_id": "TYP-DUR-005",
+    "action_code": "KEEP_AWAY_FROM_DOWNED_POWER_LINES",
+    "title": "Keep away from fallen wires and wet electricity",
+    "hazard": "typhoon",
+    "secondary_hazards": ["electrical_hazard", "flood"],
+    "settings": ["home", "school", "outdoor"],
+    "phase": "during",
+    "required_context": ["hazard == typhoon", "phase == during", "downed_line_or_wet_electrical_hazard == true"],
+    "trigger_events": ["learner_approaches_power_line", "learner_approaches_wet_outlet", "electrical_hazard_detected"],
+    "objective": "Keep the learner away from an electrical hazard.",
+    "ordered_actions": ["Stop and keep well away.", "Warn nearby people without approaching the hazard.", "Tell a teacher, guardian, or responder."],
+    "prohibited_actions": ["Do not touch a wire, post, outlet, appliance, water near electricity, breaker, or switch.", "Do not try to move the hazard."],
+    "adult_handoff": "A trained adult, utility worker, or responder isolates the hazard.",
+    "rationale": "Water and fallen electrical equipment may be energized even when they look harmless.",
+    "criticality": "P0_CRITICAL",
+    "priority": 100,
+    "safe_default": "Keep away and alert an adult.",
+    "blocks_action_codes": ["TOUCH_POWER_LINE", "OPERATE_BREAKER", "TOUCH_WET_APPLIANCE"],
+    "language": {
+      "en-PH": {"short": "Keep away from the wire or wet electrical item.", "instruction": "Do not touch it or nearby water. Warn others and tell an adult or responder."},
+      "fil-PH": {"short": "Lumayo sa kable o basang gamit na de-kuryente.", "instruction": "Huwag hawakan ito o ang kalapit na tubig. Magbabala sa iba at magsabi sa nakatatanda o responder."},
+      "taglish-PH": {"short": "Keep away from the wire or wet electrical item.", "instruction": "Do not touch it or nearby water. Warn others and tell an adult or responder."}
+    },
+    "source_claims": [
+      {"source_id": "phivolcs-project-maghanda-broadcasters-manual-2022", "locator": "PDF page 10", "pages": [10], "disposition": "KEEP_EXACT"},
+      {"source_id": "ocd-disaster-preparedness-guidebook", "locator": "PDF pages 3 and 5", "pages": [3, 5], "disposition": "KEEP_EXACT"}
+    ],
+    "conflict_ids": ["CF-016"]
+  },
+  {
+    "protocol_id": "TYP-DUR-006",
+    "action_code": "MOVE_HIGHER_IF_TRAPPED_BY_RISING_WATER",
+    "title": "Move higher when rising water blocks evacuation",
+    "hazard": "typhoon",
+    "secondary_hazards": ["flood"],
+    "settings": ["home", "school"],
+    "phase": "during",
+    "required_context": ["hazard == typhoon", "phase == during", "rising_water_present == true", "safe_exit_unavailable == true", "approved_higher_area_reachable_without_water == true"],
+    "trigger_events": ["ground_route_flooded", "responsible_adult_directs_upward"],
+    "objective": "Move the learner away from rising water without entering it.",
+    "ordered_actions": ["Stay with the responsible adult or class.", "Use the dry approved route to the higher safe area.", "Signal or communicate your location.", "Wait for responder instructions."],
+    "prohibited_actions": ["Do not enter the water.", "Do not climb an unapproved roof, tree, or unstable object.", "Do not leave the group."],
+    "adult_handoff": "Responders or the local authority direct rescue or further movement.",
+    "rationale": "The action is allowed only when trusted VR state confirms a dry approved route to higher shelter.",
+    "criticality": "P0_CRITICAL",
+    "priority": 100,
+    "safe_default": "Stay out of the water and use only the approved dry route with an adult.",
+    "blocks_action_codes": ["ENTER_FLOODWATER", "CLIMB_UNAPPROVED_STRUCTURE", "LEAVE_GROUP"],
+    "language": {
+      "en-PH": {"short": "Use the approved dry route to higher safety.", "instruction": "Stay with the adult or class, do not enter the water, and signal your location."},
+      "fil-PH": {"short": "Gamitin ang tuyong tamang ruta papunta sa mas mataas na ligtas na lugar.", "instruction": "Manatili sa nakatatanda o klase, huwag lumusong sa tubig, at ipaalam ang inyong lokasyon."},
+      "taglish-PH": {"short": "Use the approved dry route to higher safety.", "instruction": "Stay with the adult or class, do not enter the water, at signal your location."}
+    },
+    "source_claims": [
+      {"source_id": "phivolcs-project-maghanda-broadcasters-manual-2022", "locator": "PDF page 23", "pages": [23], "disposition": "SIMPLIFY"},
+      {"source_id": "pagasa-floods-web", "locator": "Flood countermeasures section", "pages": [], "disposition": "SIMPLIFY"}
+    ],
+    "conflict_ids": ["CF-020"]
+  },
+  {
+    "protocol_id": "TYP-AFT-001",
+    "action_code": "WAIT_FOR_TYPHOON_CLEARANCE",
+    "title": "Wait for official clearance after a typhoon",
+    "hazard": "typhoon",
+    "settings": ["home", "school", "outdoor"],
+    "phase": "after",
+    "required_context": ["hazard == typhoon", "phase == after", "official_clearance_received == false"],
+    "trigger_events": ["wind_or_rain_weakens", "learner_asks_to_leave", "learner_asks_to_return_home"],
+    "objective": "Prevent movement based only on quieter weather.",
+    "ordered_actions": ["Remain in the approved safe area.", "Listen for authenticated authority, teacher, or guardian clearance.", "Move only when the approved route is confirmed."],
+    "prohibited_actions": ["Do not go outside or return home just because the weather looks calmer.", "Do not explore the affected area."],
+    "adult_handoff": "The authority, school, or guardian confirms clearance and route.",
+    "rationale": "Flooding, wind, structural damage, and electrical hazards can remain after the storm weakens.",
+    "criticality": "P0_CRITICAL",
+    "priority": 100,
+    "safe_default": "Remain sheltered until authenticated clearance.",
+    "blocks_action_codes": ["LEAVE_SHELTER_WITHOUT_CLEARANCE", "RETURN_HOME_WITHOUT_CLEARANCE"],
+    "language": {
+      "en-PH": {"short": "Wait for official clearance.", "instruction": "Stay in the approved safe area until an authority, teacher, or guardian confirms the route is safe."},
+      "fil-PH": {"short": "Hintayin ang opisyal na pahintulot.", "instruction": "Manatili sa itinakdang ligtas na lugar hanggang kumpirmahin ng kinauukulan, guro, o tagapag-alaga na ligtas ang ruta."},
+      "taglish-PH": {"short": "Wait for official clearance.", "instruction": "Stay sa approved safe area until an authority, teacher, or guardian confirms na safe ang route."}
+    },
+    "source_claims": [
+      {"source_id": "phivolcs-project-maghanda-broadcasters-manual-2022", "locator": "PDF page 10", "pages": [10], "disposition": "KEEP_EXACT"},
+      {"source_id": "unicef-ph-typhoon", "locator": "PDF page 10", "pages": [10], "disposition": "KEEP_EXACT"},
+      {"source_id": "ocd-disaster-preparedness-guidebook", "locator": "PDF pages 3-5", "pages": [3, 4, 5], "disposition": "KEEP_EXACT"}
+    ]
+  },
+  {
+    "protocol_id": "TYP-AFT-002",
+    "action_code": "AVOID_POST_TYPHOON_DAMAGE",
+    "title": "Avoid damaged areas after a typhoon",
+    "hazard": "typhoon",
+    "secondary_hazards": ["electrical_hazard", "flood", "structural_damage"],
+    "settings": ["home", "school", "outdoor"],
+    "phase": "after",
+    "required_context": ["hazard == typhoon", "phase == after", "damage_or_debris_present == true"],
+    "trigger_events": ["learner_approaches_damage", "learner_asks_to_inspect"],
+    "objective": "Keep the learner away from post-storm structural and electrical hazards.",
+    "ordered_actions": ["Keep your distance.", "Tell a teacher, guardian, or responder what and where the hazard is.", "Use only the cleared route."],
+    "prohibited_actions": ["Do not touch fallen trees, damaged buildings, debris, wires, outlets, or standing water.", "Do not inspect or repair damage."],
+    "adult_handoff": "Responders and qualified adults inspect and repair hazards.",
+    "rationale": "Post-storm hazards may collapse, cut, contaminate, or electrocute.",
+    "criticality": "P0_CRITICAL",
+    "priority": 98,
+    "safe_default": "Keep away and report the hazard.",
+    "blocks_action_codes": ["TOUCH_DEBRIS", "ENTER_DAMAGED_STRUCTURE", "PERFORM_REPAIR"],
+    "language": {
+      "en-PH": {"short": "Keep away from damaged areas.", "instruction": "Report the hazard to an adult or responder and use only a cleared route."},
+      "fil-PH": {"short": "Lumayo sa mga nasirang lugar.", "instruction": "Ireport ang panganib sa nakatatanda o responder at gumamit lamang ng rutang pinayagan na."},
+      "taglish-PH": {"short": "Keep away from damaged areas.", "instruction": "Report the hazard to an adult or responder and use only a cleared route."}
+    },
+    "source_claims": [
+      {"source_id": "phivolcs-project-maghanda-broadcasters-manual-2022", "locator": "PDF page 10", "pages": [10], "disposition": "KEEP_EXACT"},
+      {"source_id": "ocd-disaster-preparedness-guidebook", "locator": "PDF pages 3 and 5", "pages": [3, 5], "disposition": "KEEP_EXACT"}
+    ],
+    "conflict_ids": ["CF-016"]
+  },
+  {
+    "protocol_id": "TYP-AFT-003",
+    "action_code": "SCHOOL_REUNIFICATION_AFTER_TYPHOON",
+    "title": "Stay with the class for reunification",
+    "hazard": "typhoon",
+    "settings": ["school"],
+    "phase": "after",
+    "required_context": ["hazard == typhoon", "phase == after", "location == school"],
+    "trigger_events": ["school_all_clear_or_reunification_started", "learner_attempts_to_leave_group"],
+    "objective": "Keep the learner accounted for until the school completes its approved release process.",
+    "ordered_actions": ["Stay with the class or assigned group.", "Answer headcount.", "Follow the teacher to the approved reunification point.", "Leave only through the approved release process."],
+    "prohibited_actions": ["Do not leave school alone or meet an unverified person.", "Do not go back to a damaged room for belongings."],
+    "adult_handoff": "School staff manage headcount and authorized reunification.",
+    "rationale": "DepEd policy treats learner tracking and reunification as school responsibilities.",
+    "criticality": "P1_IMPORTANT",
+    "priority": 90,
+    "safe_default": "Stay with the assigned teacher or group.",
+    "blocks_action_codes": ["LEAVE_SCHOOL_ALONE", "REENTER_DAMAGED_ROOM"],
+    "language": {
+      "en-PH": {"short": "Stay with your class for reunification.", "instruction": "Answer headcount and leave only through the school's approved release process."},
+      "fil-PH": {"short": "Manatili sa klase para sa reunification.", "instruction": "Sumagot sa bilang at umalis lamang sa tamang release process ng paaralan."},
+      "taglish-PH": {"short": "Stay with your class for reunification.", "instruction": "Answer headcount and leave only through the school's approved release process."}
+    },
+    "source_claims": [
+      {"source_id": "deped-do-033-s2021-typhoon-flood-school-preparedness", "locator": "PDF pages 8-9", "pages": [8, 9], "disposition": "BACKGROUND_ONLY"},
+      {"source_id": "lrmds-sdrr-manual-book-1", "locator": "PDF pages 16-18", "pages": [16, 17, 18], "disposition": "ADULT_ONLY"}
+    ],
+    "conflict_ids": ["CF-020"]
+  },
+  {
+    "protocol_id": "TYP-AFT-004",
+    "action_code": "REPORT_FEELINGS_AFTER_TYPHOON",
+    "title": "Tell a guardian how you feel",
+    "hazard": "typhoon",
+    "settings": ["home"],
+    "phase": "after",
+    "required_context": ["hazard == typhoon", "phase == after", "location == home_or_family_shelter"],
+    "trigger_events": ["learner_reports_fear", "learner_reports_confusion", "post_event_check_in"],
+    "objective": "Support an age-appropriate emotional check-in without diagnosis.",
+    "ordered_actions": ["Tell a trusted adult what you are feeling.", "Ask questions about what happens next.", "Stay with the family in the safe area."],
+    "prohibited_actions": ["Do not hide pain, fear, or an injury.", "Do not treat CALM as a counsellor or medical diagnosis."],
+    "adult_handoff": "A guardian, teacher, counsellor, or health professional provides support when needed.",
+    "rationale": "UNICEF emphasizes children's mental and emotional safety after disasters.",
+    "criticality": "P2_EDUCATIONAL",
+    "priority": 55,
+    "safe_default": "Talk to a trusted adult and stay with the family.",
+    "blocks_action_codes": ["DIAGNOSE_MENTAL_HEALTH"],
+    "language": {
+      "en-PH": {"short": "Tell a trusted adult how you feel.", "instruction": "It is okay to feel worried. Ask what happens next and stay with your family in the safe area."},
+      "fil-PH": {"short": "Sabihin sa pinagkakatiwalaang nakatatanda ang nararamdaman mo.", "instruction": "Ayos lang ang mag-alala. Magtanong kung ano ang susunod at manatili sa pamilya sa ligtas na lugar."},
+      "taglish-PH": {"short": "Tell a trusted adult how you feel.", "instruction": "Okay lang to feel worried. Ask what happens next and stay with your family sa safe area."}
+    },
+    "source_claims": [
+      {"source_id": "unicef-ph-typhoon", "locator": "PDF pages 2 and 10", "pages": [2, 10], "disposition": "KEEP_EXACT"}
+    ]
+  },
+  {
+    "protocol_id": "TYP-AFT-005",
+    "action_code": "OUTDOOR_REMAIN_SHELTERED_AFTER_TYPHOON",
+    "title": "Remain sheltered after outdoor typhoon exposure",
+    "hazard": "typhoon",
+    "settings": ["outdoor"],
+    "phase": "after",
+    "required_context": ["hazard == typhoon", "phase == after", "current_shelter_approved == true", "official_clearance_received == false"],
+    "trigger_events": ["weather_quiets", "learner_asks_to_continue_trip"],
+    "objective": "Keep the learner at the approved shelter until the route is cleared.",
+    "ordered_actions": ["Stay with the responsible adult.", "Remain inside the approved shelter.", "Wait for clearance and a confirmed route."],
+    "prohibited_actions": ["Do not continue the trip, explore, or return outside without clearance.", "Do not cross water or debris."],
+    "adult_handoff": "The local authority or responsible adult confirms movement.",
+    "rationale": "A quieter storm does not prove outdoor routes are safe.",
+    "criticality": "P1_IMPORTANT",
+    "priority": 90,
+    "safe_default": "Remain sheltered with the responsible adult.",
+    "blocks_action_codes": ["CONTINUE_TRIP_WITHOUT_CLEARANCE", "CROSS_DEBRIS"],
+    "language": {
+      "en-PH": {"short": "Stay in the approved shelter.", "instruction": "Remain with the responsible adult until an authority confirms the outdoor route is safe."},
+      "fil-PH": {"short": "Manatili sa itinakdang silungan.", "instruction": "Manatili kasama ang nakatatanda hanggang kumpirmahin ng kinauukulan na ligtas ang ruta sa labas."},
+      "taglish-PH": {"short": "Stay in the approved shelter.", "instruction": "Remain with the responsible adult until an authority confirms na safe ang outdoor route."}
+    },
+    "source_claims": [
+      {"source_id": "unicef-ph-typhoon", "locator": "PDF page 10", "pages": [10], "disposition": "KEEP_EXACT"},
+      {"source_id": "phivolcs-project-maghanda-broadcasters-manual-2022", "locator": "PDF page 10", "pages": [10], "disposition": "KEEP_EXACT"}
+    ],
+    "conflict_ids": ["CF-020"]
+  },
+  {
+    "protocol_id": "TYP-AFT-006",
+    "action_code": "LEARNER_MUST_NOT_INSPECT_OR_REPAIR",
+    "title": "Leave utilities cleanup and repair to adults",
+    "hazard": "typhoon",
+    "settings": ["home", "school", "outdoor"],
+    "phase": "after",
+    "required_context": ["hazard == typhoon", "phase == after", "learner_considers_cleanup_repair_or_utility_action == true"],
+    "trigger_events": ["learner_reaches_for_switch", "learner_attempts_cleanup", "learner_asks_to_repair"],
+    "objective": "Prevent adult and professional recovery tasks from becoming learner instructions.",
+    "ordered_actions": ["Step away from the damaged or wet area.", "Tell a teacher, guardian, or responder what you noticed.", "Wait in the approved safe area."],
+    "prohibited_actions": ["Do not switch electricity on or off.", "Do not touch gas, outlets, appliances, wires, floodwater, debris, tools, roofs, trees, or damaged structures.", "Do not clean contaminated water or food."],
+    "adult_handoff": "Qualified adults and professionals inspect, isolate, clean, and repair.",
+    "rationale": "Source recovery lists contain tasks that are hazardous for children.",
+    "criticality": "P1_IMPORTANT",
+    "priority": 94,
+    "safe_default": "Step away and report the hazard.",
+    "blocks_action_codes": ["OPERATE_UTILITY", "PERFORM_REPAIR", "CLEAN_CONTAMINATION", "HANDLE_DEBRIS"],
+    "language": {
+      "en-PH": {"short": "Step away and leave repair to adults.", "instruction": "Report the damaged, wet, or dirty area and do not touch utilities, tools, debris, or floodwater."},
+      "fil-PH": {"short": "Lumayo at ipaubaya sa nakatatanda ang pagkukumpuni.", "instruction": "Ireport ang sira, basa, o maruming lugar at huwag hawakan ang utilities, tools, debris, o baha."},
+      "taglish-PH": {"short": "Step away and leave repair to adults.", "instruction": "Report the damaged, wet, or dirty area and do not touch utilities, tools, debris, or floodwater."}
+    },
+    "source_claims": [
+      {"source_id": "phivolcs-project-maghanda-broadcasters-manual-2022", "locator": "PDF pages 10 and 24", "pages": [10, 24], "disposition": "ADULT_ONLY"},
+      {"source_id": "unicef-ph-typhoon", "locator": "PDF page 10", "pages": [10], "disposition": "ADULT_ONLY"},
+      {"source_id": "deped-do-033-s2021-typhoon-flood-school-preparedness", "locator": "PDF pages 10 and 17", "pages": [10, 17], "disposition": "ADULT_ONLY"}
+    ],
+    "conflict_ids": ["CF-016"]
+  }
+]
