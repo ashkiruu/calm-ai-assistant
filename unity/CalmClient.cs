@@ -33,6 +33,8 @@ namespace CALM.Assistant
         public string active_simulation_instruction;
         public string mapping_status;
         public string scope_constraint;
+        public bool general_qa;
+        public string retrieval_mode; // task_scoped | all_supported_hazards
 
         public string question_scope;   // see CalmScope
         public string asked_hazard;     // empty when the learner named no hazard
@@ -96,6 +98,7 @@ namespace CALM.Assistant
         public const string Ok = "OK";
         public const string OkCrossHazard = "OK_CROSS_HAZARD";
         public const string OkInHazardOffTask = "OK_IN_HAZARD_OFF_TASK";
+        public const string OkGeneralQa = "OK_GENERAL_QA";
         /// A hazard is live; the other emergency is deliberately postponed.
         public const string DeferredDuringCriticalTask = "DEFERRED_DURING_CRITICAL_TASK";
         /// In scope, but nothing curated answers it. Hand off to the teacher.

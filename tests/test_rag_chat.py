@@ -79,6 +79,62 @@ class RAGChatTests(unittest.TestCase):
             self.assertIn(evidence_id, [item["protocol_id"] for item in evidence])
             self.assertEqual(result["hazard"], hazard)
 
+    def test_tutorial_ask_task_retrieves_the_named_hazard_not_its_placeholder(self) -> None:
+        result = self.service.answer(
+            question="What should I do during a fire?",
+            task_id="tut_13_ask",
+        )
+
+        self.assertTrue(result["llm_used"])
+        self.assertEqual(result["completion_code"], "OK_GENERAL_QA")
+        self.assertEqual(result["evidence_scope"], "general_evidence")
+        self.assertTrue(result["general_qa"])
+        self.assertEqual(result["retrieval_mode"], "all_supported_hazards")
+        self.assertTrue(result["retrieved_evidence_ids"])
+        self.assertTrue(
+            all(item.startswith("FIR-") for item in result["retrieved_evidence_ids"])
+        )
+
+        payload = self.payload_from_last_call()
+        self.assertTrue(payload["ACTIVE_SIMULATION_CONTEXT"]["general_qa"])
+        self.assertEqual(
+            payload["LEARNER_AGENCY_POLICY"]["immediate_action"], None
+        )
+        prompt = self.provider.calls[-1][0]["content"]
+        self.assertIn("any supported disaster hazard", prompt)
+        self.assertNotIn("different emergency", prompt)
+
+    def test_tutorial_ask_task_can_give_a_broad_preparedness_overview(self) -> None:
+        result = self.service.answer(
+            question="What is disaster preparedness?",
+            task_id="tut_13_ask",
+        )
+
+        self.assertEqual(result["completion_code"], "OK_GENERAL_QA")
+        self.assertEqual(
+            result["retrieved_evidence_ids"],
+            ["EQ-BEF-001", "FIR-BEF-002", "TYP-BEF-002"],
+        )
+
+    def test_general_task_outage_falls_back_to_general_evidence(self) -> None:
+        service = RAGChatService(UnavailableProvider())
+        result = service.answer(
+            question="What should I do during a fire?",
+            task_id="tut_13_ask",
+        )
+
+        self.assertFalse(result["llm_used"])
+        self.assertEqual(result["answer_source"], "deterministic_fallback")
+        self.assertEqual(
+            result["response_text"],
+            service.repository.get(result["retrieved_evidence_ids"][0])[
+                "language_pack"
+            ]["en-PH"]["instruction"],
+        )
+        self.assertNotEqual(
+            result["response_text"], result["active_simulation_instruction"]
+        )
+
     def test_scenario_bound_task_is_explicitly_scoped_in_prompt(self) -> None:
         self.service.answer(
             question="Should I move this?",
@@ -901,6 +957,7 @@ class ResponseContractTests(unittest.TestCase):
             rag_chat_module.EVIDENCE_TASK,
             rag_chat_module.EVIDENCE_TASK_PLUS_PHASE,
             rag_chat_module.EVIDENCE_ASKED_HAZARD,
+            rag_chat_module.EVIDENCE_GENERAL,
             rag_chat_module.EVIDENCE_NONE,
         }
         schema_scopes = set(

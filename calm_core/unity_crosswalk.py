@@ -24,8 +24,11 @@ BLOCKED_LIFECYCLE_STATES = {
     "SUPERSEDED",
     "RETIRED",
 }
+# The Tutorial contains many learner-training tasks that do not use the
+# backend assistant. Reconcile the one Tutorial task that actually calls CALM
+# without claiming every tutorial TEACH/TRY beat is a backend task.
 UNITY_TASK_PATTERN = re.compile(
-    r'\bId\s*=\s*"((?:eq|fire|typ)_(?:home|sch|out)_\d+_[A-Za-z0-9_]+)"'
+    r'\bId\s*=\s*"((?:(?:eq|fire|typ)_(?:home|sch|out)_\d+_[A-Za-z0-9_]+|tut_13_ask))"'
 )
 
 
@@ -169,6 +172,12 @@ def validate_crosswalk(
                 errors.append(f"duplicate task_id: {task_id}")
             task_ids.add(str(task_id))
 
+            general_qa = task.get("general_qa", False)
+            if not isinstance(general_qa, bool):
+                errors.append(f"{label}: general_qa must be a boolean")
+            elif general_qa and not task.get("scope_constraint"):
+                errors.append(f"{label}: general_qa task needs a scope_constraint")
+
             phase = task.get("phase")
             status = task.get("mapping_status")
             if phase not in PHASES:
@@ -207,13 +216,14 @@ def validate_crosswalk(
                     errors.append(f"{label}: unknown protocol_id {protocol_id}")
                     continue
                 classification = card.get("classification", {})
-                if classification.get("hazard") != hazard:
+                if classification.get("hazard") != hazard and not general_qa:
                     errors.append(f"{label}: {protocol_id} has the wrong hazard")
-                if setting not in classification.get("settings", []):
+                if setting not in classification.get("settings", []) and not general_qa:
                     errors.append(f"{label}: {protocol_id} does not apply to {setting}")
                 if (
                     classification.get("phase") != phase
                     and not task.get("allow_cross_phase_grounding", False)
+                    and not general_qa
                 ):
                     errors.append(
                         f"{label}: {protocol_id} is cross-phase without explicit permission"
@@ -345,6 +355,12 @@ class UnityScenarioCrosswalk:
                 "phase": task["phase"],
                 "setting": task["setting"],
             },
+            "general_qa": bool(task.get("general_qa", False)),
+            "retrieval_mode": (
+                "all_supported_hazards"
+                if task.get("general_qa", False)
+                else "task_scoped"
+            ),
             "required_trusted_flags": task["required_trusted_flags"],
             "mapping_status": task["mapping_status"],
             "scope_constraint": task.get("scope_constraint"),

@@ -47,6 +47,9 @@ class QuestionInScopeTests(unittest.TestCase):
             "Ano ang gagawin ko?",
             "Saan ako pupunta?",
             "May lindol ba?",
+            "How do I prepare?",
+            "What is disaster preparedness?",
+            "Paano maghanda?",
         ):
             with self.subTest(question=question):
                 self.assertTrue(question_in_scope(question))

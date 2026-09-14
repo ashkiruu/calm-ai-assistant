@@ -22,6 +22,7 @@ from .question_scope import (
     QuestionScope,
     classify,
     detect_locale,
+    question_in_scope,
 )
 from .repository import ProtocolRepository, content_tokens
 from .unity_crosswalk import UnityScenarioCrosswalk
@@ -140,10 +141,22 @@ def _decision_trace(
 #: from.  Ranking alone is not relevance; see rank_educational_scored.
 MIN_EVIDENCE_OVERLAP = 1
 MAX_OFF_TASK_CARDS = 3
+MAX_GENERAL_CARDS = 4
+
+# Used only when a general question has no hazard-specific wording of its own.
+# These are existing, eligible educational cards; they are a small overview,
+# not new safety content authored by the assistant.
+GENERAL_OVERVIEW_IDS = {
+    "before": ("EQ-BEF-001", "FIR-BEF-002", "TYP-BEF-002"),
+    "during": ("EQ-DUR-001", "FIR-DUR-001", "TYP-DUR-001"),
+    "after": ("EQ-AFT-004", "FIR-AFT-001", "TYP-AFT-001"),
+    None: ("EQ-BEF-001", "FIR-BEF-002", "TYP-BEF-002"),
+}
 
 EVIDENCE_TASK = "task_evidence"
 EVIDENCE_TASK_PLUS_PHASE = "task_plus_phase_evidence"
 EVIDENCE_ASKED_HAZARD = "asked_hazard_evidence"
+EVIDENCE_GENERAL = "general_evidence"
 EVIDENCE_NONE = "none"
 
 SOURCE_LLM = "llm"
@@ -255,6 +268,12 @@ class RAGChatService:
         not a distraction.  'during' is always live, and an 'after' task carrying
         P0 evidence covers aftershocks and uncleared structures, which are.
         """
+
+        if plan.get("general_qa"):
+            # The Tutorial ask-anything task is an educational question state,
+            # not a live hazard mission, even though its schema-compatible
+            # parent mission carries a placeholder hazard.
+            return False
 
         phase = plan["retrieval_filters"]["phase"]
         if phase == "during":
@@ -383,6 +402,48 @@ class RAGChatService:
             relevant = [card for _, card in scored]
         return relevant[:MAX_OFF_TASK_CARDS]
 
+    def _general_evidence(
+        self,
+        *,
+        question: str,
+        scope: QuestionScope,
+        locale: str,
+    ) -> list[dict[str, Any]]:
+        """Retrieve eligible evidence across the supported disaster hazards.
+
+        A named hazard or phase narrows the pool without using the Tutorial's
+        placeholder context as a restriction. If a broad preparedness question
+        has no matching vocabulary, use one reviewed educational card per
+        supported hazard so the model can give a bounded overview. The
+        fallback is allowed only for a question that the deterministic scope
+        gate already recognizes as disaster-related.
+        """
+
+        candidates = self.repository.candidates(
+            hazard=scope.asked_hazard,
+            phase=scope.asked_phase,
+        )
+        scored = self.repository.rank_educational_scored(
+            candidates, question, locale
+        )
+        relevant = [
+            card for overlap, card in scored if overlap >= MIN_EVIDENCE_OVERLAP
+        ]
+
+        if not relevant and scope.asked_hazard:
+            # Naming a supported hazard is already a strong routing signal. The
+            # corpus cards need not repeat the hazard word in every localized
+            # sentence, so do not reject a valid hazard question for zero word
+            # overlap within that filtered hazard.
+            relevant = [card for _, card in scored]
+
+        if not relevant and not scope.asked_hazard and question_in_scope(question):
+            overview_ids = GENERAL_OVERVIEW_IDS[scope.asked_phase]
+            by_id = {card["protocol_id"]: card for card in self.repository.cards}
+            relevant = [by_id[item] for item in overview_ids if item in by_id]
+
+        return relevant[:MAX_GENERAL_CARDS]
+
     def _messages(
         self,
         *,
@@ -395,19 +456,36 @@ class RAGChatService:
         previous_response: str | None = None,
         response_goal: str = "direct_answer",
     ) -> list[dict[str, str]]:
-        on_task = scope.scope == SCOPE_ON_TASK
+        general_qa = bool(plan.get("general_qa"))
+        on_task = scope.scope == SCOPE_ON_TASK and not general_qa
         practice_bound = plan["mapping_status"] in {"scenario_bound", "evidence_gap"}
         active_instruction = plan["active_simulation_instruction"]
         practice_steps = plan.get("practice_steps", [])
 
-        scope_rule = (
-            "Because this task is simulation-specific, explicitly say 'In this "
-            "simulation' and do not turn its prop or route into general real-world "
-            "advice."
-            if plan["mapping_status"] in {"scenario_bound", "evidence_gap"}
-            else "Do not claim that the simulation layout is a universal real-world rule."
-        )
-        if scope.scope == SCOPE_CROSS_HAZARD:
+        if general_qa:
+            scope_rule = (
+                "This is the Tutorial's general disaster-preparedness Q&A task. "
+                "The placeholder Tutorial context is not a live emergency and is "
+                "not an answer boundary. Use the supplied evidence across all "
+                "supported hazards and phases without changing the VR state."
+            )
+        else:
+            scope_rule = (
+                "Because this task is simulation-specific, explicitly say 'In this "
+                "simulation' and do not turn its prop or route into general real-world "
+                "advice."
+                if plan["mapping_status"] in {"scenario_bound", "evidence_gap"}
+                else "Do not claim that the simulation layout is a universal real-world rule."
+            )
+        if general_qa:
+            off_task_rule = (
+                "\n- The learner may ask about any supported disaster hazard or "
+                "preparedness phase here. Answer the named topic from the supplied "
+                "evidence; do not defer it because it differs from the Tutorial's "
+                "placeholder context and do not mention a Tutorial prop, route, or "
+                "location as if it were the answer."
+            )
+        elif scope.scope == SCOPE_CROSS_HAZARD:
             off_task_rule = (
                 "\n- The learner is asking about a different emergency from the one "
                 "in the active task. Begin with 'That is about a different "
@@ -434,7 +512,15 @@ class RAGChatService:
         else:
             language_rule = LANGUAGE_RULE
 
-        if on_task:
+        if general_qa:
+            agency_rule = (
+                "The learner is asking for general disaster-preparedness teaching. "
+                "Lead with the supported self-protection action for the asked topic, "
+                "then state what to avoid and add an adult or responder handoff only "
+                "when the supplied evidence requires it. Do not lead with the "
+                "Tutorial's placeholder instruction."
+            )
+        elif on_task:
             agency_rule = (
                 "The learner is asking about the task currently in front of them. "
                 f'The immediate action they can perform is: "{active_instruction}" '
@@ -564,6 +650,8 @@ Answer rules, in priority order:
                 "scene": plan["scene"],
                 "task_id": plan["task_id"],
                 **plan["retrieval_filters"],
+                "general_qa": general_qa,
+                "retrieval_mode": plan.get("retrieval_mode", "task_scoped"),
                 "instruction": plan["active_simulation_instruction"],
                 "required_trusted_flags": plan["required_trusted_flags"],
                 "mapping_status": plan["mapping_status"],
@@ -632,6 +720,8 @@ Answer rules, in priority order:
             "scenario_id": plan["scenario_id"],
             "scene": plan["scene"],
             **plan["retrieval_filters"],
+            "general_qa": bool(plan.get("general_qa")),
+            "retrieval_mode": plan.get("retrieval_mode", "task_scoped"),
             "active_simulation_instruction": plan["active_simulation_instruction"],
             "mapping_status": plan["mapping_status"],
             "scope_constraint": plan["scope_constraint"],
@@ -666,6 +756,8 @@ Answer rules, in priority order:
                 "scenario_id": plan["scenario_id"],
                 "task_id": plan["task_id"],
                 **plan["retrieval_filters"],
+                "general_qa": bool(plan.get("general_qa")),
+                "retrieval_mode": plan.get("retrieval_mode", "task_scoped"),
                 "locale": locale,
                 "mapping_status": plan["mapping_status"],
                 "question_scope": scope.scope,
@@ -722,6 +814,7 @@ Answer rules, in priority order:
             previous_response = None
 
         plan = self.crosswalk.retrieval_plan(task_id)
+        general_qa = bool(plan.get("general_qa"))
         filters = plan["retrieval_filters"]
         scope = classify(
             cleaned_question,
@@ -773,7 +866,15 @@ Answer rules, in priority order:
         completion_code = "OK"
         deferred = False
 
-        if scope.scope == SCOPE_CROSS_HAZARD:
+        if general_qa:
+            evidence_cards = self._general_evidence(
+                question=cleaned_question,
+                scope=scope,
+                locale=locale,
+            )
+            evidence_scope = EVIDENCE_GENERAL
+            completion_code = "OK_GENERAL_QA"
+        elif scope.scope == SCOPE_CROSS_HAZARD:
             if critical:
                 # The hazard is live.  Deliver the reviewed cue for the step the
                 # learner is standing in and promise the other hazard later.
@@ -845,7 +946,7 @@ Answer rules, in priority order:
             # For the active task, the Unity crosswalk's exact instruction is
             # the narrowest safe fallback. For a calm cross-hazard question, use
             # the first retrieved card's reviewed localized instruction instead.
-            if evidence_scope == EVIDENCE_ASKED_HAZARD:
+            if evidence_scope in {EVIDENCE_ASKED_HAZARD, EVIDENCE_GENERAL}:
                 fallback_text = evidence_cards[0]["language_pack"][locale][
                     "instruction"
                 ]

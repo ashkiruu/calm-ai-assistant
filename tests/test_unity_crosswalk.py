@@ -13,8 +13,8 @@ class UnityScenarioCrosswalkTests(unittest.TestCase):
         cls.crosswalk = UnityScenarioCrosswalk()
 
     def test_loads_all_implemented_unity_tasks(self) -> None:
-        self.assertEqual(self.crosswalk.mission_count, 8)
-        self.assertEqual(self.crosswalk.task_count, 55)
+        self.assertEqual(self.crosswalk.mission_count, 9)
+        self.assertEqual(self.crosswalk.task_count, 56)
 
     def test_covers_all_three_hazards(self) -> None:
         hazards = {
@@ -60,6 +60,19 @@ class UnityScenarioCrosswalkTests(unittest.TestCase):
             {"hazard": "earthquake", "phase": "during", "setting": "home"},
         )
 
+    def test_tutorial_ask_task_uses_general_retrieval_mode(self) -> None:
+        task = self.crosswalk.get_task("tut_13_ask")
+        self.assertIsNotNone(task)
+        self.assertTrue(task["general_qa"])
+
+        plan = self.crosswalk.retrieval_plan("tut_13_ask")
+        self.assertEqual(plan["retrieval_mode"], "all_supported_hazards")
+        self.assertTrue(plan["general_qa"])
+        self.assertEqual(
+            plan["retrieval_filters"],
+            {"hazard": "earthquake", "phase": "before", "setting": "home"},
+        )
+
     def test_unknown_unity_task_is_rejected(self) -> None:
         with self.assertRaisesRegex(KeyError, "Unknown Unity task_id"):
             self.crosswalk.retrieval_plan("not_a_real_task")
@@ -68,7 +81,7 @@ class UnityScenarioCrosswalkTests(unittest.TestCase):
         report = validate_crosswalk()
 
         self.assertEqual(report["status"], "PASS", report["errors"])
-        self.assertEqual(report["task_count"], 55)
+        self.assertEqual(report["task_count"], 56)
 
 
 class UnityReconciliationTests(unittest.TestCase):

@@ -30,6 +30,7 @@ DISASTER_TERMS = {
     "peligro", "ruta", "saklolo", "salamin", "signal", "silong", "sugat",
     "sugatan", "sumilong", "takip", "tulong", "tulungan", "tumakbo", "ulo",
     "umalis", "usok", "yanig",
+    "prepared", "prepare", "preparing", "preparedness", "readiness", "ready",
 }
 #: Below this length a shared prefix or suffix is coincidence, not morphology.
 MIN_MORPHOLOGICAL_MATCH = 4
@@ -60,6 +61,9 @@ GENERIC_SAFETY_QUESTIONS = {
     "anong gagawin", "anong gawin", "ano ang gagawin ko", "paano ako",
     "paano ko", "ligtas ba", "safe ba", "delikado ba", "bakit kailangan",
     "ano ang mangyayari", "saan ako", "pwede ba ako", "kailangan ko bang",
+    "how do i prepare", "how can i prepare", "how should i prepare",
+    "what is disaster preparedness", "what does disaster preparedness mean",
+    "paano maghanda", "paano naghahanda",
 }
 HAZARD_TERMS = {
     "earthquake": {"earthquake", "lindol", "shaking", "aftershock"},

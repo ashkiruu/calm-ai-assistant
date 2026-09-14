@@ -661,6 +661,34 @@
           "required_trusted_flags": {"hazard_active": false, "official_clearance_received": true, "floodwater_present": true, "downed_line_or_wet_electrical_hazard": true, "trusted_safe_route_available": true}
         }
       ]
+    },
+    {
+      "scene": "Tutorial",
+      "scenario_id": "unity-tutorial-ask-v1",
+      "storyboard": "docs/storyboard/00_Tutorial.md",
+      "hazard": "earthquake",
+      "setting": "home",
+      "location_type": "indoors",
+      "default_location_zone": "TUTORIAL",
+      "implemented_task_count": 1,
+      "tasks": [
+        {
+          "task_id": "tut_13_ask",
+          "phase": "before",
+          "learner_action": "ask_general_disaster_preparedness_question",
+          "active_simulation_instruction": "Ask KALMA a question about disaster preparedness and listen to the answer.",
+          "practice_steps": [
+            "Hold the talk button.",
+            "Ask a disaster-preparedness question.",
+            "Let go and listen to the answer."
+          ],
+          "protocol_ids": ["EQ-BEF-001", "FIR-BEF-002", "TYP-BEF-002"],
+          "mapping_status": "ready",
+          "general_qa": true,
+          "required_trusted_flags": {"hazard_active": false},
+          "scope_constraint": "Tutorial Q&A only — answers use approved evidence across earthquake, fire, and typhoon preparedness; this is educational practice, not a live emergency."
+        }
+      ]
     }
   ]
 }

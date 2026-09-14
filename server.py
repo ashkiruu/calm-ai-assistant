@@ -120,6 +120,7 @@ CompletionCode = Literal[
     "OK",
     "OK_CROSS_HAZARD",
     "OK_IN_HAZARD_OFF_TASK",
+    "OK_GENERAL_QA",
     "DEFERRED_DURING_CRITICAL_TASK",
     "NO_RELEVANT_EVIDENCE",
     "OUTSIDE_DISASTER_SCOPE",
@@ -128,6 +129,7 @@ EvidenceScope = Literal[
     "task_evidence",
     "task_plus_phase_evidence",
     "asked_hazard_evidence",
+    "general_evidence",
     "none",
 ]
 
@@ -160,6 +162,8 @@ class ChatResponse(BaseModel):
     active_simulation_instruction: str
     mapping_status: str
     scope_constraint: str | None = None
+    general_qa: bool = False
+    retrieval_mode: Literal["task_scoped", "all_supported_hazards"] = "task_scoped"
 
     question_scope: QuestionScope
     asked_hazard: Literal["earthquake", "fire", "typhoon"] | None = None
@@ -291,6 +295,7 @@ def list_unity_tasks() -> dict[str, Any]:
                         "learner_action": task["learner_action"],
                         "instruction": task["active_simulation_instruction"],
                         "mapping_status": task["mapping_status"],
+                        "general_qa": bool(task.get("general_qa", False)),
                     }
                     for task in mission["tasks"]
                 ],
