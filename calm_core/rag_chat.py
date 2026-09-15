@@ -163,6 +163,73 @@ SOURCE_LLM = "llm"
 SOURCE_DETERMINISTIC = "deterministic_fallback"
 SOURCE_GROUNDING_GUARDRAIL = "grounding_guardrail_fallback"
 
+# These two prompts are the first questions explicitly taught in the Unity
+# Tutorial. They need a useful, child-safe answer even when the local model is
+# unavailable (for example, while Ollama is starting). They are deliberately
+# short glossary answers, not a second open-ended knowledge base: any action
+# question still routes through the reviewed evidence cards below.
+TUTORIAL_GLOSSARY_FALLBACKS = {
+    "hazard": {
+        "en-PH": (
+            "Hazards are things or situations that can hurt people or make a place "
+            "unsafe. Examples are falling objects, smoke or fire, floodwater, and "
+            "damaged wires. Keep away and tell a trusted adult."
+        ),
+        "fil-PH": (
+            "Ang mga panganib ay mga bagay o sitwasyong maaaring makasakit o "
+            "magdulot ng hindi ligtas na lugar. Halimbawa ang nahuhulog na bagay, "
+            "usok o apoy, baha, at sirang kable. Lumayo at magsabi sa nakatatanda."
+        ),
+        "taglish-PH": (
+            "Hazards ay mga bagay o sitwasyon na puwedeng makasakit o magpahamak. "
+            "Halimbawa: falling objects, usok o apoy, baha, at damaged wires. "
+            "Lumayo at magsabi sa trusted adult."
+        ),
+    },
+    "typhoon": {
+        "en-PH": (
+            "A typhoon is a strong tropical cyclone in the western Pacific. It can "
+            "bring strong winds and heavy rain. Listen to PAGASA and follow your "
+            "teacher or guardian's safety instructions."
+        ),
+        "fil-PH": (
+            "Ang typhoon o malakas na bagyo ay isang tropical cyclone sa kanlurang "
+            "Pacific. Maaari itong magdala ng malakas na hangin at ulan. Makinig sa "
+            "PAGASA at sundin ang safety instructions ng guro o tagapag-alaga."
+        ),
+        "taglish-PH": (
+            "A typhoon o malakas na bagyo is a tropical cyclone sa western Pacific. "
+            "Maaari itong magdala ng strong winds at heavy rain. Listen sa PAGASA at "
+            "sundin ang safety instructions ng teacher o guardian."
+        ),
+    },
+}
+
+
+def _tutorial_glossary_fallback(question: str, locale: str) -> str | None:
+    """Return a reviewed-style definition for the Tutorial's taught prompts.
+
+    Do this only for a definition question. A request such as "What should I
+    do during a typhoon?" must keep using the normal evidence-card fallback;
+    replacing it with a definition would be less safe and less useful.
+    """
+
+    words = set(re.findall(r"[a-zA-Z]+", question.casefold()))
+    asks_for_definition = bool(
+        words
+        & {"what", "ano", "anong", "meaning", "mean", "kahulugan", "ibig"}
+    )
+    if not asks_for_definition:
+        return None
+
+    has_hazard = bool(words & {"hazard", "hazards", "panganib", "peligro"})
+    has_typhoon = bool(words & {"typhoon", "bagyo"})
+    if has_hazard and not has_typhoon:
+        return TUTORIAL_GLOSSARY_FALLBACKS["hazard"][locale]
+    if has_typhoon and not has_hazard:
+        return TUTORIAL_GLOSSARY_FALLBACKS["typhoon"][locale]
+    return None
+
 
 def _covers_configured_steps(text: str, steps: list[str]) -> bool:
     """Require each configured interaction step to survive generation.
@@ -946,7 +1013,14 @@ Answer rules, in priority order:
             # For the active task, the Unity crosswalk's exact instruction is
             # the narrowest safe fallback. For a calm cross-hazard question, use
             # the first retrieved card's reviewed localized instruction instead.
-            if evidence_scope in {EVIDENCE_ASKED_HAZARD, EVIDENCE_GENERAL}:
+            tutorial_glossary = (
+                _tutorial_glossary_fallback(cleaned_question, locale)
+                if general_qa
+                else None
+            )
+            if tutorial_glossary:
+                fallback_text = tutorial_glossary
+            elif evidence_scope in {EVIDENCE_ASKED_HAZARD, EVIDENCE_GENERAL}:
                 fallback_text = evidence_cards[0]["language_pack"][locale][
                     "instruction"
                 ]

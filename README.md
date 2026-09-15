@@ -17,7 +17,7 @@ answers.
 | External/domain approval | Not yet completed |
 | Production retrieval units | 0 (intentionally blocked) |
 | School profile | Synthetic demo data; not school-approved |
-| Unity scenario-to-corpus crosswalk | 8 missions / 55 implemented tasks validated |
+| Unity scenario-to-corpus crosswalk | 9 missions / 56 implemented tasks validated |
 | Local LLM/RAG chat | Ollama `qwen2.5:3b` connected at `POST /api/v1/chat` |
 | Model selection | 3 models scored over 44 reviewed questions; see `docs/MODEL_BENCHMARK.md` |
 | Question scope gating | Off-task and cross-hazard questions routed deterministically before retrieval |
@@ -39,6 +39,15 @@ Use the included Python 3.11 virtual environment:
 
 ```powershell
 .\venv\Scripts\python.exe -m uvicorn server:app --host 127.0.0.1 --port 8010
+```
+
+For a Quest on the same Wi-Fi, use the LAN launcher instead. It binds only to
+the local network interfaces; accept the Windows Firewall prompt for the
+private network, then place the PC's IPv4 address in the Quest
+`calm-assistant.json` configuration file.
+
+```powershell
+.\scripts\start_lan_server.ps1
 ```
 
 Open `http://127.0.0.1:8010`. The CALM Mission Control page lets you:

@@ -135,6 +135,21 @@ class RAGChatTests(unittest.TestCase):
             result["response_text"], result["active_simulation_instruction"]
         )
 
+    def test_tutorial_glossary_survives_a_model_outage(self) -> None:
+        service = RAGChatService(UnavailableProvider())
+        cases = {
+            "What are hazards?": "Hazards are things or situations",
+            "What is a typhoon?": "A typhoon is a strong tropical cyclone",
+        }
+
+        for question, expected_start in cases.items():
+            with self.subTest(question=question):
+                result = service.answer(question=question, task_id="tut_13_ask")
+                self.assertFalse(result["llm_used"])
+                self.assertEqual(result["answer_source"], "deterministic_fallback")
+                self.assertEqual(result["completion_code"], "OK_GENERAL_QA")
+                self.assertTrue(result["response_text"].startswith(expected_start))
+
     def test_scenario_bound_task_is_explicitly_scoped_in_prompt(self) -> None:
         self.service.answer(
             question="Should I move this?",
