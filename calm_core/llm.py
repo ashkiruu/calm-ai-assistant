@@ -22,6 +22,11 @@ class LLMResult:
     elapsed_ms: int
     prompt_tokens: int | None = None
     output_tokens: int | None = None
+    #: The generation hit the token cap instead of finishing its sentence.
+    #: Without this the caller cannot tell a complete answer from an amputated
+    #: one, and the output scrubber then appends a full stop and ships the
+    #: fragment to a child as though it were a finished instruction.
+    truncated: bool = False
 
 
 class LLMProvider(Protocol):
@@ -61,6 +66,10 @@ class OllamaClient:
             "base_url": self.base_url,
             "timeout_seconds": self.timeout_seconds,
             "availability_checked_on_request": True,
+            # Whether the learner's question leaves this machine. Reported
+            # rather than documented: there is now a provider for which this is
+            # False, and a comment claiming otherwise cannot fail a test.
+            "local_only": True,
         }
 
     def chat(self, messages: list[dict[str, str]]) -> LLMResult:
@@ -105,4 +114,7 @@ class OllamaClient:
             elapsed_ms=elapsed_ms,
             prompt_tokens=body.get("prompt_eval_count"),
             output_tokens=body.get("eval_count"),
+            # Ollama says "stop" when the model finished and "length" when
+            # num_predict cut it off.  This field was being discarded.
+            truncated=body.get("done_reason") == "length",
         )

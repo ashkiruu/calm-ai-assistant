@@ -98,6 +98,21 @@ generated in **0.4–1.8 s warm**.
   loading and `rag_chat.py:938-961` degraded as designed. Warm it with one throwaway request
   before a demo, and **read `llm_used`, never the text, to tell whether the model ran.**
 
+### Credentials
+
+**`OPENROUTER_API_KEY` lives in the Windows user environment, nowhere else.** Set it with
+`setx OPENROUTER_API_KEY "sk-or-v1-..."` (or `[Environment]::SetEnvironmentVariable(...,'User')`)
+and open a new shell; `calm_core/openrouter.py` reads it at call time.
+
+It arrived once as a `key.txt` sitting in this repo's root — untracked, never committed, and one
+`git add .` away from being published in a repo that is private today and may not be forever. The
+value was moved into the environment and the file deleted. `.gitignore` now carries `key.txt`,
+`*.key` and `secrets.*` as the seatbelt. **Never paste a key into a chat, a commit, or a file
+inside the repo** — a key in a transcript is a key you have to rotate.
+
+`GET /api/v1/auth/key` reports the account's credit and tier without revealing the key, which is
+the cheap way to check limits before a sweep.
+
 ### Speech runs on the CPU here, deliberately
 
 `CALM_WHISPER_DEVICE=cpu` is set on the launch line. With the default `auto`, `/api/v1/voice-chat`
@@ -145,7 +160,7 @@ version of this file invented both.
 GET  /api/v1/unity/tasks            # what Unity gates push-to-talk on
 POST /api/v1/chat                   # KALMA conversational (typed)
 POST /api/v1/voice-chat             # + STT, loads Whisper on first use
-POST /api/v1/speak                  # TTS — the ONLY step that leaves the machine
+POST /api/v1/speak                  # TTS — always leaves the machine (see local_only)
 POST /api/v1/respond                # deterministic trusted-state mission endpoint
 GET  /api/v1/missions[/{id}]
 ```
@@ -308,6 +323,80 @@ perfect and are not the model's doing anyway.
 Raising `CALM_LLM_MAX_TOKENS` 128 → 256 changed almost nothing (94 % vs 93 %, locale 81 % vs
 79 %), so truncation is **not** the cause. That hypothesis is ruled out.
 
+### `CALM_LLM_MAX_TOKENS=128` silently zeroes out every reasoning model
+
+The default budget was chosen for `qwen2.5:3b`, which emits an answer and nothing else. On
+OpenRouter that number **excludes three models from the comparison entirely, and it looks like
+the models are broken.**
+
+`z-ai/glm-5.2:free` and `inclusionai/ling-3.0-flash-vl:free` came back with empty `content` and
+`OpenRouter returned no answer`. The raw response says why: `finish_reason: "length"` with
+`reasoning_tokens` of **126 and 143 against a 128-token cap**. They are reasoning models, the
+budget covers reasoning *and* content, and they spent all of it thinking. Raised to 1024, both
+answer correctly in Filipino. `dots-studio/dots-3-note-preview:free` and
+`nvidia/nemotron-3.5-lightning:free` recovered the same way — the latter had been returning its
+own chain of thought (*"Here's a thinking process: 1. **Analyze User Input:**"*) as the answer.
+
+- **Check `finish_reason` before believing "the model returned nothing."** `length` plus a high
+  `reasoning_tokens` is a budget problem; `stop` with empty content is a model problem.
+- **Reading only `choices[0].message.content` is correct and worth keeping.** Reasoning arrives
+  in a separate `reasoning` field, so a learner can never be shown the model's internal
+  monologue — except from a model that writes its reasoning into `content` anyway, which
+  `nvidia/nemotron-3-super-120b-a12b:free` does. That is a real disqualifier for a child-facing
+  assistant, and the word and sentence caps catch it.
+- **A sweep and its control must share the budget.** Raising it also removes a mechanical brake
+  on the 45-word rule, so word-cap compliance becomes a test of instruction-following rather
+  than of truncation — better methodology, but it moves the incumbent's numbers, so re-run the
+  control at the same setting rather than comparing against an older run.
+
+### Licensing — "open source" is three different things, and one of them bites
+
+The project needs models that are **open source**. That splits three ways, and only the first
+two are defensible in a manuscript that claims openness:
+
+| Tier | Meaning | In the sweep |
+|---|---|---|
+| **OSI-approved open source** | Apache-2.0, MIT — use, modify, deploy, no conditions | `nex-agi/Nex-N2.5-Pro` (Apache-2.0), `inclusionAI/Ling-3.0-flash-VL` (MIT), `zai-org/GLM-5.2` (MIT) |
+| **Open weights, custom licence** | Downloadable and self-hostable, but conditions attached | Nemotron-3-Ultra-550B and Nemotron-3.5-Lightning (OpenMDW-1.1), Nemotron-3-Super-120B (NVIDIA Nemotron Open Model License) |
+| **API-only** | No weights anywhere; cannot be self-hosted at all | `dots-studio/dots-3-note-preview` — **disqualified** |
+
+Check it, do not infer it. `https://openrouter.ai/api/v1/models` carries a `hugging_face_id`
+field: absent means no public weights. Then `https://huggingface.co/api/models/<id>` gives
+`cardData.license` plus `license_name`/`license_link` when the licence is custom.
+
+> **The incumbent is the licensing problem.** `Qwen/Qwen2.5-3B-Instruct` is **`qwen-research`**,
+> not Apache-2.0 — a research/non-commercial licence. Most other Qwen2.5 sizes (7B, 14B, 32B…)
+> *are* Apache-2.0; the 3B specifically is not. For a prototype that is fine, but a system headed
+> for DepEd classrooms should not ship on a research-only licence, and a thesis that calls its
+> model "open source" without qualification would be overstating it. Worth raising with the
+> adviser, and an argument for replacing `qwen2.5:3b` regardless of how it scores.
+
+**Open source and locally deployable are different filters, and the second is harsher.** A 550B
+model is open-weights and completely unrunnable on a teacher's laptop; the 6 GB development GPU
+caps out near 8B. If the thesis keeps its "runs locally, privately" claim, the real candidate set
+is open-licensed models at roughly 8B or below — which is a much smaller list than the sweep, and
+is where `sailor2:8b` and the `aisingapore/` SEA-LION 8B models earn their place.
+
+### Free models on OpenRouter: check, do not assume
+
+The `:free` roster **rotates** — 20 → 15 → 14 and back to 20 within weeks. An article
+recommending `meta-llama/llama-3.3-70b-instruct:free` was already stale: it is not in the live
+list. Query `https://openrouter.ai/api/v1/models` and filter on `id.endswith(":free")`.
+
+Of 12 plausible free candidates smoke-tested with one Filipino prompt each, **7 were usable**.
+The failures were worth one request each to discover rather than 44:
+
+| Failure | Models | Meaning |
+|---|---|---|
+| upstream `429` | both Gemma 4 | Saturated, not broken. Retry later. |
+| `ResourceExhausted` | `nemotron-3-nano-omni` | Upstream capacity. |
+| refused | `thinkingmachines/inkling` ×2 | Needs a **data-policy change** in the account's OpenRouter privacy settings — an account decision, not a code one. |
+
+**Account state matters more than the model list.** `GET /api/v1/auth/key` reports `is_free_tier`
+and credit. With credit purchased, free models allow **1000 requests/day** instead of 50 — and
+50/day is less than one 44-question sweep, so an uncredited account can benchmark exactly one
+model per day.
+
 ### Where to run bigger models
 
 The 6 GB RTX 3060 caps out near 8B and even that spills to CPU (`sailor2:8b` is 5.2 GB
@@ -348,6 +437,117 @@ sweep as a pure size control: if it beats the SEA models, the problem was capaci
 than language coverage, and that is worth knowing before citing either in the manuscript.
 
 Keep `qwen2.5:3b` in every sweep as the control, or the comparison has no zero point.
+
+## RAG pipeline audit and fixes — 2026-09-17
+
+A correctness and performance pass over the RAG path. Four real defects, all reproduced before
+being fixed and re-measured after. Suite: **198 tests, 0 failures.**
+
+### The output scrubber was corrupting correct answers
+
+`RESIDUAL_REFERENCE_PATTERN` (`rag_chat.py`) had an **optional** citation verb (`{_CITES}?`), so it
+deleted the bare nouns *card*, *source*, *protocol* and the Filipino *protokol* wherever they
+appeared — in ordinary prose, with no citation anywhere near. Measured, not theorised:
+
+| Model wrote | Learner saw |
+|---|---|
+| `Do not go near the flood source.` | `Do not go near the flood.` |
+| `Listen only to trusted sources like PAGASA.` | `Listen only to trusted like PAGASA.` |
+| `Keep your ID card in your bag.` | `Keep your ID in your bag.` |
+| `Makinig sa mga mapagkakatiwalaang sources.` | `Makinig sa mga mapagkakatiwalaang.` |
+| `Stay low. Source: the safety cards.` | `Stay low..` |
+
+The second row is the dangerous one: it deletes the **object of a safety instruction** and leaves a
+fluent sentence that means something else. The fourth is the project's own documented
+"amputated Filipino clause" failure — this time produced by our scrubber, not by a model.
+
+The citation verb is now **required**; a bare noun is ordinary language. A match is also consumed
+to the end of its clause, because stopping at the noun is what turned *"ayon sa protokol ng
+paaralan"* into a dangling *", paaralan."*. Three things still mark a noun as machinery: a
+citation verb, an adjacent `EQ-DUR-001`-style identifier, or a label colon.
+
+### Truncated answers were dressed up as finished sentences
+
+`llm.py` discarded Ollama's `done_reason` and `openrouter.py` discarded `finish_reason`, so a
+generation cut off at the token cap was indistinguishable from a complete one — and then
+`_normalize_learner_text` appended a full stop, shipping *"Stay under the table until the
+shaking."* to a child and to TTS as though it were finished. `LLMResult.truncated` now carries the
+signal, the full stop is suppressed when set, and `generation.truncated` reports it.
+
+**`GenerationInfo` in `server.py` had to be updated too** — Pydantic silently drops undeclared
+keys, so the field would have died at the response boundary and never reached Unity. That is the
+trap `ResponseContractTests` exists to catch.
+
+### The pipeline answered Filipino children in English
+
+The deterministic floor — what the pipeline scores with **no model at all** — was **34/44 (77%)**
+on locale. It is now **43/44 (97%)**. The cause was English-only trusted text leaking into
+non-English conversations:
+
+- `active_simulation_instruction` and `practice_steps` are single English strings in
+  `config/unity_scenario_crosswalk.v1.json`; all 47 protocol cards carry full `language_pack`
+  entries for all three locales. The code preferred the English crosswalk string over the reviewed
+  localised instruction sitting beside it.
+- `prohibited_practice_handoff` had **no locale guard**, unlike the `missing_configured_steps`
+  condition directly above it, so it could discard a correct Filipino answer and substitute
+  English. Eligible on 14 of 56 tasks.
+- `AUTHORITY_PATTERN` was English-only (`teacher|guardian|adult|…`), so the guardrail never fired
+  on a Filipino answer at all — disabled in exactly the locales the model is worst at.
+  `messages.py` already used `guro` and `nakatatanda`; only this pattern had not been told.
+
+New `_trusted_replacement` picks the reviewed card instruction for the requested locale, falling
+back to the localised `FALLBACKS` rather than to English.
+
+> **What this does and does not change, stated carefully.** With the floor at 97 % and
+> `qwen2.5:3b` at 81 %, **the model is measurably worse than no model at all on language** —
+> roughly 8 of its 29 generated answers come back in the wrong one.
+>
+> It does **not** invalidate the earlier model benchmarks, and an earlier draft of this section
+> wrongly said it did. `qwen2.5:3b` scores 35–36/44 on locale *both before and after* these fixes
+> — checked across four runs. The English-fallback bug sits on the `LLMUnavailable` path, which a
+> working model never takes; the floor measurement forces all 44 questions down that path, which
+> is why the floor moved 20 points while the live-model number did not move at all. The scrubber
+> and guardrail fixes affect only answers containing *card*/*source*/*protocol* or hitting the
+> handoff guardrail on 14 of 56 tasks — real defects, but rare in the 44-question fixture.
+>
+> The earlier benchmarks were weak for a different reason: **the metric, not the bugs.** See the
+> benchmark section above — three of the six checks are the deterministic pipeline and every model
+> passes them 44/44, which is why a nonexistent model scored 94 % overall and why the real models
+> all landed in a compressed 91–98 % band. Locale is the only column that discriminates.
+
+### Prompt trimming
+
+Measured on `eq_home_6_dch` / `en-PH`: **5238 → 4861 chars**, median latency **701 → 604 ms**
+(−14 %), with locale up 79 → 81 % and the leak check still 44/44.
+
+- `indent=2` on the user payload → compact separators. Pure whitespace, ~350 chars on a one-card
+  prompt and ~870 on a five-card one.
+- **`protocol_id` is no longer sent to the model.** The prompt forbids it from uttering an
+  identifier and the scrubber polices the ones that leak — putting `EQ-DUR-001` in front of a small
+  model and then guarding against it twice is self-inflicted. `retrieved_evidence_ids` in the
+  *response* is built from `evidence_cards`, so the audit trail is untouched. Two tests that used
+  the prompt payload as a proxy for "which cards were retrieved" now assert on that response field,
+  which is what Unity and the session log actually read.
+
+**Do not "optimise" the evidence payload by sending one locale or dropping provenance** —
+`_evidence_summary` has always done both. Checked before proposing it.
+
+### Still open, from the audit and not yet fixed
+
+- **The scope gate refuses real questions.** *"Can I take my toy?"* during a live earthquake is
+  answered with a canned brush-off, and the same question is refused on some tasks and answered on
+  others depending on incidental token overlap. `CLAUDE.md` previously called the deterministic
+  parts "perfect"; the golden set only contains trivially off-topic refusals, so the benchmark
+  cannot see this.
+- **`in_hazard_off_task` on a critical task** sets `deferred=True` and then calls the model anyway,
+  with during-phase evidence, to answer an after-phase question — labelled `completion_code: "OK"`.
+- **`rag_chat.py` hardcodes `ProtocolRepository()`**, ignoring `CALM_CORPUS_MODE`, so the RAG path
+  and the router can disagree about which cards are eligible.
+- **No golden-answer test exists** anywhere; every "safety" test on the generation path asserts a
+  prompt substring rather than an outcome.
+- Prefix stability is still only **51 %** within a task and **9 %** across locales, because the
+  system block puts locale- and task-variable text near the top. Reordering it is the largest
+  remaining latency lever and is a pure string reshuffle.
 
 ## Rules that still bind
 

@@ -21,6 +21,7 @@ from calm_core import (
     ContextValidationError,
     LLMUnavailable,
     OllamaClient,
+    OpenRouterClient,
     RAGChatService,
     UnityScenarioCrosswalk,
 )
@@ -49,8 +50,31 @@ assistant = CALMAssistant(
     else None,
 )
 unity_crosswalk = UnityScenarioCrosswalk()
+
+
+def _build_llm_provider():
+    """Pick the generation provider. Local unless deliberately told otherwise.
+
+    Defaulting to Ollama is the point: a hosted provider sends the learner's
+    question to a third party, so that has to be an explicit act. Selecting on
+    "is OPENROUTER_API_KEY present" would make it an accident of the
+    environment, which is exactly how a key left over from a benchmark run
+    would end up serving children.
+    """
+
+    choice = os.getenv("CALM_LLM_PROVIDER", "ollama").strip().lower()
+    if choice == "openrouter":
+        return OpenRouterClient()
+    if choice not in {"", "ollama"}:
+        raise RuntimeError(
+            f"CALM_LLM_PROVIDER={choice!r} is not a known provider "
+            "(expected 'ollama' or 'openrouter')."
+        )
+    return OllamaClient()
+
+
 rag_chat = RAGChatService(
-    OllamaClient(),
+    _build_llm_provider(),
     unity_crosswalk,
     repository=assistant.repository,
 )
@@ -139,6 +163,9 @@ class GenerationInfo(BaseModel):
     prompt_tokens: int
     output_tokens: int
     output_normalized: bool
+    #: Must be declared here or Pydantic drops it on the way out and the
+    #: headset never learns the answer was cut off mid-sentence.
+    truncated: bool = False
 
 
 class ChatResponse(BaseModel):

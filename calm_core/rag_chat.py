@@ -48,8 +48,16 @@ _REFERENCE_NOUN = r"(?:the\s+)?(?:safety\s+)?(?:protocols?|cards?|sources?|proto
 _CITES = r"(?:according to|ayon sa|batay sa|base sa|sabi ng|sumunod sa|per)"
 
 PROTOCOL_ID_PATTERN = re.compile(rf"\b{_PROTOCOL_ID}\b", re.I)
+#: Terms for "go and fetch a grown-up", in every locale CALM speaks.  The
+#: Filipino half was missing, so `prohibited_practice_handoff` -- the guardrail
+#: that stops the model bolting an unnecessary adult handoff onto a task the
+#: child can do alone -- never fired on a Filipino or Taglish answer.  It was
+#: disabled in exactly the locales the model is measurably worst at.
+#: `messages.py` already uses `guro` and `nakatatanda`, so the vocabulary was
+#: known to the project; only this pattern had not been told.
 AUTHORITY_PATTERN = re.compile(
-    r"\b(?:teacher|guardian|adult|responder|grown[- ]?up|authority|firefighter)\b",
+    r"\b(?:teacher|guardian|adult|responder|grown[- ]?up|authority|firefighter"
+    r"|guro|nakatatanda|magulang|tagapag-?alaga|bumbero|matanda)\b",
     re.I,
 )
 #: A trailing citation: "..., as recommended by the safety protocol EQ-DUR-001"
@@ -69,13 +77,32 @@ ORPHANED_REPORTING_PATTERN = re.compile(
     r"(?:advises?|recommends?|states?|says?|suggests?|indicates?)\s+",
     re.I,
 )
-#: Any surviving reference to the machinery itself, with the citation verb and
-#: identifier that surround it: "According to the safety card EQ-DUR-001," or
-#: the Filipino "sumunod sa protocol ng :".  The prompt forbids these words, so
-#: a survivor is a violation to strip whole rather than leave half-deleted.
+#: Any surviving reference to the machinery itself: "According to the safety
+#: card EQ-DUR-001," or the Filipino "sumunod sa protocol ng :".
+#:
+#: The citation verb is REQUIRED.  It used to be optional (`{_CITES}?`), which
+#: made this pattern delete the bare English nouns "card", "source", "protocol"
+#: and the Filipino "protokol" wherever they appeared -- in ordinary prose, with
+#: no citation anywhere near.  Measured damage to correct answers:
+#:
+#:   "Do not go near the flood source."  -> "Do not go near the flood."
+#:   "Listen only to trusted sources..." -> "Listen only to trusted like PAGASA."
+#:   "Makinig sa mga mapagkakatiwalaang sources." -> cut mid-clause
+#:
+#: The second of those deletes the object of a safety instruction, and the third
+#: is the same "amputated Filipino clause" failure the project has already been
+#: bitten by from a model -- here produced by our own scrubber. A bare noun is
+#: ordinary language; only a citation, an adjacent identifier, or a label colon
+#: marks it as machinery.
+#:
+#: A matched citation is consumed to the end of its clause, because stopping at
+#: the noun is what left "ayon sa protokol ng paaralan." as ", paaralan.".
 RESIDUAL_REFERENCE_PATTERN = re.compile(
-    rf"\s*{_CITES}?\s*{_REFERENCE_NOUN}(?:\s+(?:ng|sa|of))?"
-    rf"(?:\s+{_PROTOCOL_ID})?\s*[:,]*\s*",
+    rf"\s*(?:"
+    rf"{_CITES}\s+{_REFERENCE_NOUN}[^,.!?:]*"
+    rf"|{_REFERENCE_NOUN}(?:\s+(?:ng|sa|of))?\s+{_PROTOCOL_ID}"
+    rf"|{_REFERENCE_NOUN}\s*:[^.!?]*"
+    rf")\s*[:,]*\s*",
     re.I,
 )
 #: A citation whose identifier is already gone, leaving "According to, stay
@@ -357,7 +384,13 @@ class RAGChatService:
         semantics = card["approved_semantics"]
         localized = card["language_pack"][locale]
         return {
-            "protocol_id": card["protocol_id"],
+            # `protocol_id` is deliberately NOT sent. The system prompt forbids
+            # the model from uttering an identifier, and _normalize_learner_text
+            # runs several regexes to scrub the ones that leak anyway -- putting
+            # "EQ-DUR-001" in front of a small model and then policing it twice
+            # is self-inflicted. The response's retrieved_evidence_ids is built
+            # from evidence_cards, not from this payload, so the audit trail is
+            # untouched.
             "title": card["title"],
             "objective": semantics["objective"],
             "ordered_actions": semantics["ordered_actions"],
@@ -367,8 +400,49 @@ class RAGChatService:
         }
 
     @staticmethod
-    def _normalize_learner_text(value: str, locale: str) -> tuple[str, bool]:
-        """Remove internal retrieval metadata without authoring an answer."""
+    def _trusted_replacement(
+        *,
+        locale: str,
+        response_goal: str,
+        practice_steps: list[str],
+        plan: dict[str, Any],
+        evidence_cards: list[dict[str, Any]],
+    ) -> str:
+        """Reviewed text to show when a guardrail rejects the model's answer.
+
+        English-only sources (`practice_steps`, `active_simulation_instruction`)
+        are used for `en-PH`.  For the other two locales they would change the
+        language of the conversation, so the reviewed card instruction for the
+        requested locale wins when one exists.
+        """
+
+        if locale == "en-PH":
+            if response_goal == "teach_procedure" and practice_steps:
+                return " ".join(practice_steps)
+            return plan["active_simulation_instruction"]
+
+        for card in evidence_cards:
+            localized = card.get("language_pack", {}).get(locale, {})
+            instruction = localized.get("instruction")
+            if instruction:
+                return instruction
+
+        # No reviewed card text for this locale: the reviewed deterministic
+        # fallback is still in the right language, which the English crosswalk
+        # string is not.
+        return FALLBACKS[locale]["no_card"]
+
+    @staticmethod
+    def _normalize_learner_text(
+        value: str, locale: str, truncated: bool = False
+    ) -> tuple[str, bool]:
+        """Remove internal retrieval metadata without authoring an answer.
+
+        `truncated` says the generation hit the token cap mid-sentence.  It only
+        suppresses the closing full stop: dressing an amputated clause as a
+        finished sentence is how "Stay under the table until the shaking"
+        reaches a child -- and the headset's TTS -- looking complete.
+        """
 
         normalized = " ".join(value.strip().strip('"').split())
         original_normalized = normalized
@@ -394,6 +468,9 @@ class RAGChatService:
         cleaned = re.sub(r"\s+([,.!?:])", r"\1", cleaned)
         cleaned = re.sub(r"[,:]+\s*(?=[.!?])", "", cleaned)
         cleaned = re.sub(r"([,:])[\s,:]*\1+", r"\1", cleaned)
+        # Removing a trailing clause can leave its terminator behind the one
+        # already there: "Stay low. Source: the cards." scrubbed to "Stay low..".
+        cleaned = re.sub(r"([.!?])\s*[.!?]+", r"\1", cleaned)
         cleaned = re.sub(r"\s{2,}", " ", cleaned).strip(" ,:")
         if cleaned:
             # Removing a clause can leave a sentence starting mid-case.
@@ -403,7 +480,7 @@ class RAGChatService:
                 lambda match: match.group(1) + match.group(2).upper(),
                 cleaned,
             )
-        if cleaned and cleaned[-1] not in ".!?":
+        if cleaned and cleaned[-1] not in ".!?" and not truncated:
             cleaned += "."
         if not cleaned:
             # Scrubbing consumed the whole answer, so the model returned nothing
@@ -756,7 +833,13 @@ Answer rules, in priority order:
             {"role": "system", "content": system},
             {
                 "role": "user",
-                "content": json.dumps(user_payload, ensure_ascii=False, indent=2),
+                # Compact separators, not indent=2. The indentation was ~350
+                # characters of pure whitespace on a one-card prompt and ~870 on
+                # a five-card one, carrying no meaning to the model and costing
+                # prefill on every single question.
+                "content": json.dumps(
+                    user_payload, ensure_ascii=False, separators=(",", ":")
+                ),
             },
         ]
 
@@ -812,6 +895,11 @@ Answer rules, in priority order:
                 "prompt_tokens": generated.prompt_tokens if generated else 0,
                 "output_tokens": generated.output_tokens if generated else 0,
                 "output_normalized": output_normalized,
+                # Distinct from output_normalized, which is also true for a
+                # harmless whitespace tidy. This says the model never finished
+                # its sentence, so the answer is incomplete however clean it
+                # looks.
+                "truncated": bool(generated.truncated) if generated else False,
             },
             # Parity with the router's dashboard_event. Carries the decision and
             # its grounding, never the learner's words: the question and the
@@ -1025,7 +1113,16 @@ Answer rules, in priority order:
                     "instruction"
                 ]
             else:
-                fallback_text = plan["active_simulation_instruction"]
+                # Same language trap as the guardrail below: the crosswalk
+                # instruction is English only, so an outage during a Filipino
+                # conversation used to answer the child in English.
+                fallback_text = self._trusted_replacement(
+                    locale=locale,
+                    response_goal="direct_answer",
+                    practice_steps=[],
+                    plan=plan,
+                    evidence_cards=evidence_cards,
+                )
             return deterministic(
                 fallback_text,
                 completion_code,
@@ -1034,7 +1131,7 @@ Answer rules, in priority order:
                 deferred=deferred,
             )
         learner_text, output_normalized = self._normalize_learner_text(
-            generated.text, locale
+            generated.text, locale, truncated=generated.truncated
         )
         answer_source = SOURCE_LLM
         practice_steps = plan.get("practice_steps", [])
@@ -1057,10 +1154,20 @@ Answer rules, in priority order:
             # unneeded adult handoff to a learner-executable training prop.
             # Preserve model use in telemetry, but return the complete trusted
             # interaction instead of exposing the drift to the learner.
-            learner_text = (
-                " ".join(practice_steps)
-                if response_goal == "teach_procedure" and practice_steps
-                else plan["active_simulation_instruction"]
+            #
+            # The replacement must keep the learner's language.  `practice_steps`
+            # and `active_simulation_instruction` are English-only strings in the
+            # crosswalk, so substituting them into a Filipino conversation swaps
+            # the language mid-answer -- a guardrail against drift that itself
+            # introduces a worse defect.  The reviewed card carries the same
+            # instruction in all three locales, so prefer that whenever the
+            # request is not English.
+            learner_text = self._trusted_replacement(
+                locale=locale,
+                response_goal=response_goal,
+                practice_steps=practice_steps,
+                plan=plan,
+                evidence_cards=evidence_cards,
             )
             output_normalized = True
             answer_source = SOURCE_GROUNDING_GUARDRAIL

@@ -1,7 +1,8 @@
 """Deterministic, context-aware core for the CALM assistant."""
 
 from .mission_contract import MissionContractError, MissionRegistry
-from .llm import LLMUnavailable, OllamaClient
+from .llm import LLMProvider, LLMResult, LLMUnavailable, OllamaClient
+from .openrouter import OpenRouterClient
 from .rag_chat import RAGChatService
 from .router import CALMAssistant, ContextValidationError
 from .speech import EdgeSpeechSynthesizer, SpeechUnavailable
@@ -12,10 +13,13 @@ __all__ = [
     "ContextValidationError",
     "CrosswalkValidationError",
     "EdgeSpeechSynthesizer",
+    "LLMProvider",
+    "LLMResult",
     "LLMUnavailable",
     "MissionContractError",
     "MissionRegistry",
     "OllamaClient",
+    "OpenRouterClient",
     "RAGChatService",
     "SpeechUnavailable",
     "UnityScenarioCrosswalk",

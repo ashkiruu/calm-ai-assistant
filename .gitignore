@@ -19,6 +19,14 @@ archive/legacy_vector_db_raw_pdf_2026-07-31/
 # ~1.6 MB of duplicated corpus, so it has no business in history.
 calm_bench_bundle.zip
 
+# API keys. The OpenRouter key arrived as key.txt sitting in the repo root, one
+# `git add .` away from being published to a repo that is private today and may
+# not be forever. The live key lives in the OPENROUTER_API_KEY environment
+# variable instead; these patterns are the seatbelt for the next time.
+key.txt
+*.key
+secrets.*
+
 # Common local caches and secrets
 .pytest_cache/
 .mypy_cache/

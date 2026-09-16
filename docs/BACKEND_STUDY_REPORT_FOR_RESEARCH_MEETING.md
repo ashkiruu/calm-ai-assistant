@@ -94,7 +94,7 @@ limitations section of the manuscript.
 | Layer | Technology | Why it is used |
 |---|---|---|
 | API service | Python 3.11, FastAPI, Uvicorn | Provides typed HTTP endpoints that Unity and the web prototype can call locally |
-| Local language model | Ollama with `qwen2.5:3b` | Generates short, grounded educational explanations without sending learner questions to a cloud LLM |
+| Language model | Ollama with `qwen2.5:3b` locally, or a hosted model via OpenRouter | Generates short, grounded educational explanations. Whether the learner question leaves the machine depends on which provider is configured — reported as `local_only` in `/health` |
 | Knowledge layer | JSON/JSONL protocol cards and explicit Unity crosswalk | Keeps hazard, phase, setting, action, restrictions, provenance, and review status inspectable |
 | Speech-to-text | `faster-whisper` | Transcribes learner speech locally; raw learner audio is not intentionally sent to an external transcription service |
 | Text-to-speech | `edge-tts` Philippine neural voices | Gives KALMA natural voice output in Philippine English or Filipino; this is the one network-dependent backend step |
@@ -370,16 +370,32 @@ hardware, yet capable enough to follow a tightly constrained safety prompt.
 The model is used for educational phrasing and learner questions, not as the
 authority for mission state or critical actions.
 
-### Why a local model instead of a cloud chatbot
+### Why a local model was the default, and what changed
 
-- Learner questions are processed locally by the LLM rather than being sent to
-  a general cloud LLM.
+The original argument for running the model locally still holds:
+
 - It reduces dependence on a permanent external AI API connection and API-key
   costs.
-- It supports a classroom prototype where sensitive learner questions should
-  not be sent to an unrelated model provider.
 - It makes the model replaceable: the backend uses an `LLMProvider` boundary,
-  so another locally evaluated model can be substituted later.
+  so another evaluated model can be substituted later.
+
+**What changed (2026-09-16).** That boundary now also has a hosted
+implementation, `OpenRouterClient`, added because the development machine's 6 GB
+GPU cannot run the larger multilingual models the evaluation needs. When a
+hosted provider is configured, **the learner's question is sent to a third-party
+service.** Earlier drafts of this report stated that learner questions are
+processed locally and never sent to a cloud LLM; that is only true of the Ollama
+provider and the claim has been removed rather than qualified.
+
+Two things are unchanged and are worth stating separately, because they are the
+stronger privacy properties: **learner audio is still transcribed locally and
+never leaves the machine**, and the session log still structurally excludes
+questions, answers and transcripts by allowlist (`calm_core/session_log.py`).
+
+Which side of the line a given deployment sits on is reported at runtime as
+`local_only` under `rag_chat` in `/health`, so it can be checked rather than
+assumed. Using a hosted provider for real learners is a decision for the
+adviser and the ethics review, not a configuration detail.
 
 This does not mean the entire system is offline. TTS currently uses a Microsoft
 neural voice service and therefore requires network access. The text answer and

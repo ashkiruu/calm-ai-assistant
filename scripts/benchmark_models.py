@@ -27,6 +27,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from calm_core.llm import LLMUnavailable, OllamaClient
+from calm_core.openrouter import OpenRouterClient
 from calm_core.rag_chat import MAX_ANSWER_WORDS, RAGChatService
 from calm_core.unity_crosswalk import UnityScenarioCrosswalk
 
@@ -62,65 +63,123 @@ def load_rows(path: Path) -> list[dict[str, str]]:
         return [json.loads(line) for line in stream if line.strip()]
 
 
+#: Checks that describe the SERVICE, not the model.  They are identical for
+#: every model because the deterministic pipeline produces them, so including
+#: them in a model's score measures our own code and flatters everyone equally.
+PIPELINE_CHECKS = ("scope_correct", "evidence_matches_hazard")
+#: Checks that describe the TEXT THE MODEL WROTE.  Scored only on rows the model
+#: actually answered.
+MODEL_CHECKS = (
+    "no_leaked_terms",
+    "correct_locale",
+    "within_word_cap",
+    "within_sentence_cap",
+)
+
+
 def score_answer(row: dict[str, str], result: dict) -> dict[str, bool]:
-    """Check one answer against the rules the prompt states."""
+    """Check one answer, scoring model rules only where the model answered.
+
+    A check is simply absent from the returned dict when it does not apply, and
+    the caller tracks per-check denominators, so an omitted check costs nothing
+    rather than counting as a pass.
+
+    This split is the whole point.  Scoring a deterministic fallback as though
+    the model wrote it is how a model id that does not exist reached 94 %
+    overall: the reviewed fallback passes every text rule by construction, so a
+    model that answers less scores higher.  Measured on the real sweep, the
+    three DeepSeek variants and ling-3.0-flash answered 19-25 of 44 and topped
+    the table on exactly that effect.
+    """
 
     text = result["response_text"]
     words = text.split()
     lowered = text.casefold()
-
-    # A deterministic reply is text the service authored, not the model.  The
-    # length and sentence rules are addressed to the model, so scoring them on
-    # a reviewed fallback measures the fallback's wording and penalises every
-    # model identically for output none of them produced.
     generated = result["llm_used"]
 
-    checks = {
-        # "Never use the words 'protocol', 'card', 'source', or any identifier"
-        "no_leaked_terms": not any(term in lowered for term in FORBIDDEN)
-        and not LEAKED_ID.search(text),
-        # the answer must be in the locale that was asked for
-        "correct_locale": True,
-        # the reported grounding must match what was actually answered
-        "evidence_matches_hazard": True,
+    checks: dict[str, bool] = {
         # the scope gate must land where the reviewed set says
         "scope_correct": result["question_scope"] == row["expected_scope"],
+        # the reported grounding must match what was actually answered
+        "evidence_matches_hazard": True,
     }
-    if generated:
-        # "one to three short, calm sentences and no more than 45 words total"
-        checks["within_word_cap"] = len(words) <= MAX_WORDS
-        checks["within_sentence_cap"] = (
-            len(SENTENCE_END.findall(text.strip())) <= MAX_SENTENCES
-        )
-
-    if row["locale"] in {"fil-PH", "taglish-PH"}:
-        spoken = {word.strip(".,!?").casefold() for word in words}
-        checks["correct_locale"] = bool(spoken & FILIPINO_MARKERS)
-
     if result["evidence_scope"] == "asked_hazard_evidence":
         wanted = HAZARD_PREFIX[result["asked_hazard"]]
         checks["evidence_matches_hazard"] = all(
             item.startswith(wanted) for item in result["retrieved_evidence_ids"]
         )
 
+    if not generated:
+        return checks
+
+    # "Never use the words 'protocol', 'card', 'source', or any identifier"
+    checks["no_leaked_terms"] = not any(
+        term in lowered for term in FORBIDDEN
+    ) and not LEAKED_ID.search(text)
+    # "one to three short, calm sentences and no more than 45 words total"
+    checks["within_word_cap"] = len(words) <= MAX_WORDS
+    checks["within_sentence_cap"] = (
+        len(SENTENCE_END.findall(text.strip())) <= MAX_SENTENCES
+    )
+    # Only scored where there is something to get wrong.  An English answer to
+    # an English question is not evidence of anything; 19 of the 44 reviewed
+    # questions are Filipino or Taglish and those are the discriminating ones.
+    if row["locale"] in {"fil-PH", "taglish-PH"}:
+        spoken = {word.strip(".,!?").casefold() for word in words}
+        checks["correct_locale"] = bool(spoken & FILIPINO_MARKERS)
+
     return checks
 
 
-def run_model(
-    model: str, rows: list[dict[str, str]], crosswalk, load_timeout: float
-) -> dict:
-    # Only one model fits in 4 GB of VRAM, so switching models evicts the
-    # previous one and reloads from disk.  The warm-up call therefore needs a
-    # far longer timeout than any real request will ever use.
-    warmup = RAGChatService(
-        OllamaClient(model=model, timeout_seconds=load_timeout), crosswalk
-    )
-    try:
-        warmup.answer(question="What should I do now?", task_id="eq_home_6_dch")
-    except LLMUnavailable as error:
-        return {"model": model, "error": f"failed to load: {error}"}
+def split_spec(spec: str, default_provider: str) -> tuple[str, str]:
+    """Split `openrouter:qwen/qwen3-32b` into provider and model.
 
-    service = RAGChatService(OllamaClient(model=model), crosswalk)
+    A per-model prefix rather than a whole-run flag, so the local control and a
+    dozen hosted models land in ONE comparison table.  Two runs into two report
+    files cannot be read against each other, which defeats the point.
+
+    Ollama tags carry a colon too (`qwen2.5:3b`), so only a leading segment that
+    names a known provider counts -- split once, and only on that.
+    """
+
+    head, _, rest = spec.partition(":")
+    if rest and head in PROVIDERS:
+        return head, rest
+    return default_provider, spec
+
+
+def make_client(provider: str, model: str, timeout: float | None):
+    if provider == "openrouter":
+        return OpenRouterClient(model=model, timeout_seconds=timeout)
+    return OllamaClient(model=model, timeout_seconds=timeout)
+
+
+PROVIDERS = ("ollama", "openrouter")
+
+
+def run_model(
+    spec: str, rows: list[dict[str, str]], crosswalk, load_timeout: float,
+    default_provider: str,
+) -> dict:
+    provider, model = split_spec(spec, default_provider)
+
+    if provider == "ollama":
+        # Only one model fits in VRAM, so switching models evicts the previous
+        # one and reloads from disk.  The warm-up call therefore needs a far
+        # longer timeout than any real request will ever use.
+        warmup = RAGChatService(
+            make_client(provider, model, load_timeout), crosswalk
+        )
+        try:
+            warmup.answer(question="What should I do now?", task_id="eq_home_6_dch")
+        except LLMUnavailable as error:
+            return {"model": spec, "provider": provider,
+                    "error": f"failed to load: {error}"}
+    # A hosted model has nothing to evict and no weights to page in, so the
+    # warm-up would buy nothing and cost one request per model -- which matters
+    # against a rate limit far more than it does against a disk read.
+
+    service = RAGChatService(make_client(provider, model, None), crosswalk)
 
     totals: dict[str, int] = {}
     # Checks apply to different numbers of rows, so each carries its own
@@ -139,7 +198,7 @@ def run_model(
                 locale=row["locale"],
             )
         except LLMUnavailable as error:
-            return {"model": model, "error": str(error)}
+            return {"model": spec, "provider": provider, "error": str(error)}
         elapsed = int((time.time() - started) * 1000)
 
         checks = score_answer(row, result)
@@ -157,8 +216,23 @@ def run_model(
         if broken:
             failures.append((row, result["response_text"], broken))
 
+    if generated == 0:
+        # Every reply was a deterministic fallback, so nothing here describes the
+        # model -- it describes the reviewed cards.  Scoring it anyway is not a
+        # harmless inaccuracy: a model id that does not exist comes back at the
+        # same overall percentage as a working one, because the fallback passes
+        # scope, evidence and leaked-term checks 44/44 by construction.  Refuse
+        # to report a score rather than publish a silent tie.
+        return {
+            "model": spec,
+            "provider": provider,
+            "error": "produced no answers; every reply was a deterministic "
+                     "fallback, so there is nothing about the model to score",
+        }
+
     return {
-        "model": model,
+        "model": spec,
+        "provider": provider,
         "rows": len(rows),
         "generated": generated,
         "totals": totals,
@@ -181,7 +255,9 @@ CHECK_LABELS = {
 }
 
 
-def render(reports: list[dict], fixture: Path) -> str:
+def render(
+    reports: list[dict], fixture: Path, pending: list[str] | None = None
+) -> str:
     good = [r for r in reports if "error" not in r]
     lines = [
         "# Local model benchmark",
@@ -191,7 +267,14 @@ def render(reports: list[dict], fixture: Path) -> str:
         "Every check below is a rule the system prompt actually states, checked",
         "deterministically. No model judges another model.",
         "",
-        "## Compliance",
+        "**The model score counts only answers the model actually wrote.** Every",
+        "question it does not answer falls back to reviewed deterministic text,",
+        "which passes every text rule by construction -- so a model that answers",
+        "less would otherwise score higher. The coverage row is therefore part of",
+        "the result, not a footnote: a high score on low coverage is mostly our",
+        "pipeline's score.",
+        "",
+        "## Model quality",
         "",
     ]
 
@@ -199,37 +282,79 @@ def render(reports: list[dict], fixture: Path) -> str:
         lines.append("No model completed the run.")
         return "\n".join(lines)
 
+    def cell(report: dict, key: str) -> str:
+        passed = report["totals"].get(key, 0)
+        possible = report["applicable"].get(key, 0)
+        if not possible:
+            return "n/a"
+        return f"{passed}/{possible} ({100 * passed // possible}%)"
+
     header = "| Check | " + " | ".join(r["model"] for r in good) + " |"
     lines += [header, "|" + "---|" * (len(good) + 1)]
-    for key, label in CHECK_LABELS.items():
-        cells = []
-        for report in good:
-            passed = report["totals"].get(key, 0)
-            possible = report["applicable"].get(key, 0)
-            cells.append(
-                f"{passed}/{possible} ({100 * passed // possible}%)"
-                if possible
-                else "n/a"
-            )
-        lines.append(f"| {label} | " + " | ".join(cells) + " |")
+    for key in MODEL_CHECKS:
+        lines.append(
+            f"| {CHECK_LABELS[key]} | "
+            + " | ".join(cell(r, key) for r in good)
+            + " |"
+        )
 
     overall = []
     for report in good:
-        passed = sum(report["totals"].values())
-        possible = sum(report["applicable"].values())
+        passed = sum(report["totals"].get(k, 0) for k in MODEL_CHECKS)
+        possible = sum(report["applicable"].get(k, 0) for k in MODEL_CHECKS)
         overall.append(f"**{100 * passed // possible}%**" if possible else "n/a")
-    lines.append("| **Overall** | " + " | ".join(overall) + " |")
+    lines.append("| **Model score** | " + " | ".join(overall) + " |")
+    lines.append(
+        "| **Coverage** (answered / asked) | "
+        + " | ".join(
+            f"**{r['generated']}/{r['rows']}** "
+            f"({100 * r['generated'] // r['rows']}%)"
+            for r in good
+        )
+        + " |"
+    )
+
     lines += [
         "",
-        "The word-cap and sentence-cap rules are addressed to the model, so",
-        "they are scored only on generated answers. The remaining checks apply",
-        "to every reply, including the deterministic ones.",
+        "A model that answers everything and a model that answers half are not",
+        "comparable on the score alone. Read both rows together.",
+        "",
+        "## Pipeline",
+        "",
+        "These describe the deterministic service, not the model, and are",
+        "expected to be identical everywhere. They are reported so a regression",
+        "in the pipeline is visible -- not added to any model's score.",
+        "",
+        "| Check | " + " | ".join(r["model"] for r in good) + " |",
+        "|" + "---|" * (len(good) + 1),
     ]
+    for key in PIPELINE_CHECKS:
+        lines.append(
+            f"| {CHECK_LABELS[key]} | "
+            + " | ".join(cell(r, key) for r in good)
+            + " |"
+        )
 
-    lines += ["", "## Latency", "", "Warm, GPU-resident; model load excluded.", ""]
+    lines += ["", "## Latency", ""]
+    if len({r.get("provider", "ollama") for r in good}) > 1:
+        # Mixing a local model with a hosted one in one table is the point --
+        # compliance is what is being compared. Latency is not comparable that
+        # way and should not be read as if it were.
+        lines += [
+            "**Providers differ in this run, so these are NOT comparable.** A local",
+            "figure is compute only; a hosted figure includes network round-trip and",
+            "the provider's own queueing. Compare compliance across providers, and",
+            "latency only within one.",
+            "",
+        ]
+    else:
+        lines += ["Warm, GPU-resident; model load excluded.", ""]
     lines += [
         "| Metric | " + " | ".join(r["model"] for r in good) + " |",
         "|" + "---|" * (len(good) + 1),
+        "| Provider | "
+        + " | ".join(r.get("provider", "ollama") for r in good)
+        + " |",
         "| Median | " + " | ".join(f"{r['median_ms']} ms" for r in good) + " |",
         "| p90 | " + " | ".join(f"{r['p90_ms']} ms" for r in good) + " |",
         "| Answers generated | "
@@ -259,7 +384,32 @@ def render(reports: list[dict], fixture: Path) -> str:
         lines += [f"- `{r['model']}`: {r['error']}" for r in failed]
         lines.append("")
 
+    if pending:
+        lines += [
+            "## Incomplete",
+            "",
+            "This run was stopped before these models were scored:",
+            "",
+        ]
+        lines += [f"- `{m}`" for m in pending]
+        lines.append("")
+
     return "\n".join(lines)
+
+
+def save(path: Path, reports: list[dict], fixture: Path, pending: list[str]) -> None:
+    """Write the report as it stands.
+
+    Called after EVERY model, not once at the end.  A twelve-model sweep against
+    a slow hosted provider runs for over an hour, and the end-only version threw
+    away every completed model when a run was stopped on the last one -- an hour
+    of real requests, gone, including the per-check columns that only exist in
+    the file.  Writing each time costs a few milliseconds against minutes per
+    model.
+    """
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(render(reports, fixture, pending), encoding="utf-8")
 
 
 def main() -> int:
@@ -273,34 +423,56 @@ def main() -> int:
         default=300.0,
         help="seconds allowed for the one-off model load before timing",
     )
+    parser.add_argument(
+        "--provider",
+        choices=PROVIDERS,
+        default="ollama",
+        help="default provider; a 'provider:model' prefix overrides it per model",
+    )
     args = parser.parse_args()
 
     rows = load_rows(args.fixture)
     crosswalk = UnityScenarioCrosswalk()
 
-    reports = []
-    for model in args.models:
-        print(f"running {model} over {len(rows)} questions...", flush=True)
-        report = run_model(model, rows, crosswalk, args.load_timeout)
+    reports: list[dict] = []
+    for index, model in enumerate(args.models):
+        print(
+            f"running {model} ({index + 1}/{len(args.models)}) "
+            f"over {len(rows)} questions...",
+            flush=True,
+        )
+        try:
+            report = run_model(
+                model, rows, crosswalk, args.load_timeout, args.provider
+            )
+        except KeyboardInterrupt:
+            # Ctrl-C mid-model: keep every model already scored rather than
+            # losing the run. The report says which ones never ran.
+            save(args.report, reports, args.fixture, list(args.models[index:]))
+            print(
+                f"\ninterrupted; kept {len(reports)} model(s) in {args.report}",
+                file=sys.stderr,
+            )
+            return 130
         if "error" in report:
             print(f"  FAILED: {report['error']}", file=sys.stderr)
         else:
-            passed = sum(report["totals"].values())
-            # Each check carries its own denominator -- the word and sentence
-            # caps apply only to generated answers, not to deterministic
-            # fallbacks.  Multiplying the check count by the row count assumes
-            # every check applies to every row, which under-reports the score
-            # and disagreed with the report file for the same run.
-            possible = sum(report["applicable"].values())
+            # Model checks only, matching the report's headline. Summing every
+            # check would fold in the pipeline rows that pass for everyone.
+            passed = sum(report["totals"].get(k, 0) for k in MODEL_CHECKS)
+            possible = sum(report["applicable"].get(k, 0) for k in MODEL_CHECKS)
+            score = f"{100 * passed // possible}%" if possible else "n/a"
             print(
-                f"  {100 * passed // possible}% compliant, "
+                f"  model score {score}, "
+                f"coverage {report['generated']}/{report['rows']}, "
                 f"median {report['median_ms']} ms",
                 flush=True,
             )
         reports.append(report)
+        # Persist now. Killing the process between models must not cost the
+        # models already paid for.
+        save(args.report, reports, args.fixture, list(args.models[index + 1:]))
 
-    args.report.parent.mkdir(parents=True, exist_ok=True)
-    args.report.write_text(render(reports, args.fixture), encoding="utf-8")
     # A report written outside the repo is normal -- a scratch comparison, or a
     # Colab run where the checkout lives somewhere else entirely.  relative_to
     # raises on those, and it used to do so AFTER every model had been scored

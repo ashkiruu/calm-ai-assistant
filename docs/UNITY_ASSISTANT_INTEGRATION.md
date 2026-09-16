@@ -106,11 +106,16 @@ Set `Locale` before recording. Whisper is told which language to expect; without
 that hint it mis-detects short Filipino utterances as English and then invents
 fluent English that was never spoken.
 
-## Speech out is the one networked step
+## Speech out is always networked
 
-`POST /api/v1/speak` calls a Microsoft neural voice service. It needs a network
-connection and is the only part of the pipeline that leaves the machine — only
-text CALM itself authored is ever sent.
+`POST /api/v1/speak` calls a Microsoft neural voice service, so it needs a
+network connection. Only text CALM itself authored is ever sent.
+
+This section used to call synthesis "the one networked step" and "the only part
+of the pipeline that leaves the machine." That is no longer true: generation can
+be served by a hosted provider, in which case the learner's question is sent too.
+Check `local_only` under `rag_chat` in `/health` for the deployment in front of
+you instead of assuming.
 
 It returns 503 when unreachable. **Treat that as normal, not as an error.** Show
 the subtitle and continue; a classroom without wifi still gets its safety

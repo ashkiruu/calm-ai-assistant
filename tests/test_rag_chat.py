@@ -39,6 +39,21 @@ class UnavailableProvider(RecordingProvider):
         raise LLMUnavailable("model stopped")
 
 
+class TruncatingProvider(RecordingProvider):
+    """A model that hit the token cap mid-sentence."""
+
+    def chat(self, messages):
+        self.calls.append(messages)
+        return LLMResult(
+            text=self.answer,
+            model="test-model",
+            elapsed_ms=7,
+            prompt_tokens=100,
+            output_tokens=128,
+            truncated=True,
+        )
+
+
 class RAGChatTests(unittest.TestCase):
     def setUp(self) -> None:
         self.provider = RecordingProvider()
@@ -74,9 +89,11 @@ class RAGChatTests(unittest.TestCase):
             )
             payload = self.payload_from_last_call()
             context = payload["ACTIVE_SIMULATION_CONTEXT"]
-            evidence = payload["CURATED_SAFETY_EVIDENCE"]
             self.assertEqual(context["hazard"], hazard)
-            self.assertIn(evidence_id, [item["protocol_id"] for item in evidence])
+            # Identifiers are no longer sent to the model -- the prompt forbids
+            # it from saying one -- so assert on the response's audit trail,
+            # which is the field Unity and the session log actually read.
+            self.assertIn(evidence_id, result["retrieved_evidence_ids"])
             self.assertEqual(result["hazard"], hazard)
 
     def test_tutorial_ask_task_retrieves_the_named_hazard_not_its_placeholder(self) -> None:
@@ -338,7 +355,7 @@ class RAGChatTests(unittest.TestCase):
                 )
 
     def test_previous_turn_is_dialogue_context_not_safety_authority(self) -> None:
-        self.service.answer(
+        result = self.service.answer(
             question="How?",
             task_id="eq_home_6_dch",
             previous_question="What should I do?",
@@ -347,8 +364,8 @@ class RAGChatTests(unittest.TestCase):
 
         system_prompt = self.provider.calls[-1][0]["content"]
         self.assertIn("not a safety authority", system_prompt)
-        evidence = self.payload_from_last_call()["CURATED_SAFETY_EVIDENCE"]
-        self.assertEqual([item["protocol_id"] for item in evidence], ["EQ-DUR-001"])
+        # A hostile previous turn must not change which evidence was retrieved.
+        self.assertEqual(result["retrieved_evidence_ids"], ["EQ-DUR-001"])
 
     def test_unknown_task_does_not_call_model(self) -> None:
         with self.assertRaisesRegex(KeyError, "Unknown Unity task_id"):
@@ -869,6 +886,132 @@ class OutputScrubbingTests(unittest.TestCase):
 
         self.assertEqual(text, "According to your teacher, stay with the class.")
         self.assertFalse(normalized)
+
+    def test_ordinary_english_nouns_are_not_deleted(self) -> None:
+        """'card', 'source' and 'protocol' are ordinary words, not only machinery.
+
+        The citation verb used to be optional in RESIDUAL_REFERENCE_PATTERN, so
+        these nouns were deleted wherever they appeared.  The second case is the
+        dangerous one: it removes the object of a safety instruction and leaves a
+        fluent sentence that means something else.
+        """
+
+        for sentence in (
+            "Listen only to trusted sources like PAGASA.",
+            "Do not go near the flood source.",
+            "Keep your ID card in your bag.",
+            "Check the news source before you believe it.",
+        ):
+            with self.subTest(sentence=sentence):
+                text, normalized = RAGChatService._normalize_learner_text(
+                    sentence, "en-PH"
+                )
+                self.assertEqual(text, sentence)
+                self.assertFalse(normalized)
+
+    def test_a_filipino_sentence_is_never_cut_mid_clause(self) -> None:
+        """The scrubber must not do to Filipino what a bad model does to it."""
+
+        sentence = "Makinig sa mga mapagkakatiwalaang sources."
+        text, normalized = RAGChatService._normalize_learner_text(sentence, "fil-PH")
+
+        self.assertEqual(text, sentence)
+        self.assertFalse(normalized)
+
+    def test_a_real_filipino_citation_is_removed_whole(self) -> None:
+        """Stripping to the noun left ', paaralan.' dangling behind the comma."""
+
+        text, _ = RAGChatService._normalize_learner_text(
+            "Huwag galawin ang bintana, ayon sa protokol ng paaralan.", "fil-PH"
+        )
+
+        self.assertEqual(text, "Huwag galawin ang bintana.")
+
+    def test_scrubbing_a_trailing_clause_leaves_one_full_stop(self) -> None:
+        text, _ = RAGChatService._normalize_learner_text(
+            "Stay low. Source: the safety cards.", "en-PH"
+        )
+
+        self.assertEqual(text, "Stay low.")
+
+    def test_a_truncated_answer_is_not_dressed_as_a_finished_sentence(self) -> None:
+        """Appending a full stop to an amputated clause hides the amputation."""
+
+        fragment = "Manatiling mababa at protektahan ang ulo habang"
+        finished, _ = RAGChatService._normalize_learner_text(fragment, "fil-PH")
+        cut, _ = RAGChatService._normalize_learner_text(
+            fragment, "fil-PH", truncated=True
+        )
+
+        self.assertEqual(finished, fragment + ".")
+        self.assertEqual(cut, fragment)
+
+    def test_a_filipino_question_is_never_answered_in_english_by_a_guardrail(
+        self,
+    ) -> None:
+        """The guardrails substitute trusted text; it must be trusted text in
+        the learner's own language.
+
+        `practice_steps` and `active_simulation_instruction` are English-only
+        strings in the crosswalk, so substituting them into a `fil-PH`
+        conversation swapped the language mid-answer.
+        """
+
+        english_markers = {"the", "your", "under", "stay", "and", "table"}
+
+        # Both are mapping_status scenario_bound / evidence_gap, which is what
+        # makes them eligible for prohibited_practice_handoff.
+        for task_id in ("eq_home_2_vase", "fire_sch_2_paper"):
+            with self.subTest(task_id=task_id, path="guardrail"):
+                # An answer that trips prohibited_practice_handoff by naming an
+                # adult in Filipino.
+                provider = RecordingProvider("Magsabi sa guro at maghintay.")
+                service = RAGChatService(provider)
+                result = service.answer(
+                    question="Ano ang gagawin ko?",
+                    task_id=task_id,
+                    locale="fil-PH",
+                )
+                words = {
+                    w.strip(".,!?").casefold()
+                    for w in result["response_text"].split()
+                }
+                self.assertFalse(
+                    words.issubset(english_markers | {""}) and len(words) > 2,
+                    f"answer looks English: {result['response_text']}",
+                )
+
+        with self.subTest(path="outage"):
+            service = RAGChatService(UnavailableProvider())
+            result = service.answer(
+                question="Ano ang gagawin ko?",
+                task_id="eq_home_6_dch",
+                locale="fil-PH",
+            )
+            self.assertFalse(result["llm_used"])
+            # The reviewed Filipino text always contains at least one of these
+            # function words; the English crosswalk instruction contains none.
+            self.assertTrue(
+                {"ang", "sa", "ng", "at", "mga", "huwag"}
+                & {
+                    w.strip(".,!?").casefold()
+                    for w in result["response_text"].split()
+                },
+                f"outage fallback is not Filipino: {result['response_text']}",
+            )
+
+    def test_truncation_reaches_the_response_metadata(self) -> None:
+        """`output_normalized` is also true for a whitespace tidy, so it cannot
+        carry this signal on its own."""
+
+        service = RAGChatService(TruncatingProvider("Stay under the table until the"))
+
+        result = service.answer(
+            question="What should I do?", task_id="eq_home_6_dch"
+        )
+
+        self.assertTrue(result["generation"]["truncated"])
+        self.assertFalse(result["response_text"].endswith("."))
 
     def test_scrubbed_fallback_is_localized(self) -> None:
         provider = RecordingProvider("FIR-DUR-001")

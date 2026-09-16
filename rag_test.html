@@ -325,7 +325,13 @@
         });
         ui.mission.disabled = false; ui.task.disabled = false; ui.ask.disabled = false; ui.mic.disabled = false;
         ui.modelState.classList.add('ready');
-        ui.modelState.querySelector('span').textContent = `${health.rag_chat.model} · Ollama local`;
+        // Do not hard-code "Ollama local" here. It was, and it stayed on screen
+        // unchanged after a hosted provider became possible -- a label claiming
+        // the question never left the machine while it did.
+        const where = health.rag_chat.local_only === false
+          ? `${health.rag_chat.provider} · remote`
+          : `${health.rag_chat.provider} · local`;
+        ui.modelState.querySelector('span').textContent = `${health.rag_chat.model} · ${where}`;
         refreshTask();
       } catch (error) {
         ui.modelState.classList.add('error'); ui.modelState.querySelector('span').textContent = 'Backend unavailable';
@@ -379,8 +385,8 @@
           method: 'POST', headers: {'Content-Type': 'application/json'},
           body: JSON.stringify({text, locale})
         });
-        // Synthesis is the one networked step, so it must never cost the
-        // learner the answer they already have on screen.
+        // Synthesis is networked, so it must never cost the learner the answer
+        // they already have on screen.
         if (!response.ok) { ui.voiceHint.textContent = 'Voice unavailable; the answer text still stands.'; return; }
         const blob = await response.blob();
         const audio = new Audio(URL.createObjectURL(blob));

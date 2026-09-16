@@ -14,9 +14,15 @@ change as small as it can be, but a learner who switches language mid-session
 will hear a different speaker; only the accent and register stay constant.
 
 Privacy boundary: only text CALM itself authored is ever sent for synthesis.
-Learner audio and learner questions are transcribed and answered locally and
-never leave the machine.  Synthesis is the one networked step in the pipeline,
-which is why every caller can turn it off and why failure is never fatal.
+Learner audio is transcribed locally and never leaves the machine.
+
+That is the whole claim now.  This docstring used to add "and learner questions"
+and call synthesis "the one networked step in the pipeline"; both stopped being
+true when a hosted generation provider was added (`calm_core/openrouter.py`),
+and neither statement was covered by a test, so nothing caught the drift.  Where
+a question actually goes is reported per provider as `local_only` in
+`LLMProvider.status`, which reaches `/health` -- read that rather than trusting
+prose here.  Synthesis remains optional and its failure remains non-fatal.
 """
 
 from __future__ import annotations
