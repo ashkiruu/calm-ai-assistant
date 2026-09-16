@@ -8,7 +8,7 @@ import os
 import tempfile
 from pathlib import Path
 from threading import Lock
-from typing import Any, Literal
+from typing import Any, Literal, NamedTuple
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
@@ -26,6 +26,8 @@ from calm_core import (
     UnityScenarioCrosswalk,
 )
 from calm_core.env_file import load_env_file
+from calm_core.question_scope import detect_locale
+from calm_core.rag_chat import AUTO_LOCALE
 from calm_core.router import FALLBACKS
 from calm_core.session_log import SessionLog
 from calm_core.speech import (
@@ -226,6 +228,10 @@ class VoiceChatResponse(ChatResponse):
     #: What Whisper heard, so a tester can tell a mishearing from a bad answer.
     transcript: str
     input_mode: Literal["voice"]
+    #: The language Whisper decoded the audio in ("en", "tl", ...). Reported so
+    #: a locale mismatch is visible: a "tl" transcript answered in "en-PH" means
+    #: the child spoke Filipino and was answered in English.
+    transcribed_language: str
 
 
 def _validate_voice_chat_metadata(
@@ -423,11 +429,21 @@ def voice_chat(
             previous_response=previous_response,
         )
     )
-    transcript = _transcribe_upload(audio_file, locale)
+    try:
+        transcription = _transcribe_upload(audio_file, locale)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    transcript = transcription.text
     if not transcript.strip():
         raise HTTPException(
             status_code=422, detail="No speech was recognised in the audio"
         )
+    # Resolved here rather than inside rag_chat.answer: the pipeline would run
+    # detect_locale over the transcript alone, and the transcript is only in the
+    # child's own language because the audio was decoded in it. Keeping both
+    # halves together is what stops a Filipino question becoming an English one.
+    if locale == AUTO_LOCALE:
+        locale = resolve_spoken_locale(transcription)
     try:
         result = rag_chat.answer(
             question=transcript,
@@ -445,11 +461,16 @@ def voice_chat(
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     result["transcript"] = transcript
     result["input_mode"] = "voice"
+    result["transcribed_language"] = transcription.language
     # The event records that the question was spoken, never what was said: the
     # transcript sits in the response beside it and the sink's allowlist is what
     # keeps it out of the file.
     result["dashboard_event"]["input_mode"] = "voice"
     result["dashboard_event"]["endpoint"] = "/api/v1/voice-chat"
+    # Carried into telemetry so a mishearing is visible as a mishearing. A
+    # "tl" here against an "en-PH" answer locale is the signature of the bug
+    # this field was added for.
+    result["dashboard_event"]["transcribed_language"] = transcription.language
     session_log.record(result["dashboard_event"])
     return result
 
@@ -630,7 +651,7 @@ def _cuda_is_usable() -> bool:
 ALLOWED_AUDIO_SUFFIXES = {".wav", ".mp3", ".m4a", ".ogg", ".webm"}
 
 
-def _transcribe_upload(audio_file: UploadFile, locale: str = "en-PH") -> str:
+def _transcribe_upload(audio_file: UploadFile, locale: str = "en-PH") -> Transcription:
     """Spool an upload to disk, transcribe locally, and always delete it.
 
     Learner audio is the most sensitive thing this system touches, so it lives
@@ -673,32 +694,100 @@ WHISPER_PROMPT = {
     "en": "A Grade 4 pupil asks about earthquake, fire, or typhoon safety.",
     "tl": "Nagtatanong ang bata tungkol sa lindol, sunog, o bagyo at kaligtasan.",
 }
+#: What Whisper may call Tagalog.  It has no code for Taglish, so code-mixed
+#: speech comes back as one of these or as "en" depending on the mix.
+TAGALOG_WHISPER_CODES = {"tl", "fil", "tgl"}
 
 
-def _transcribe(path: Path, locale: str = "en-PH") -> str:
+class Transcription(NamedTuple):
+    """A transcript plus what Whisper believed it was listening to.
+
+    The language is carried out of this function rather than discarded because
+    it is the only evidence of a mishearing that the rest of the request can
+    see.  Without it, Filipino speech rendered as English is indistinguishable
+    from a child who spoke English.
+    """
+
+    text: str
+    language: str
+    language_probability: float
+
+
+def _transcribe(path: Path, locale: str = "en-PH") -> Transcription:
     """Transcribe locally, telling Whisper which language to expect.
 
     Without an explicit language Whisper auto-detects, and on a short Filipino
     utterance it frequently guesses English and then invents a fluent English
     sentence that was never spoken.  A wrong transcript is worse than none: it
     reaches the router as a confident question.
+
+    ``AUTO_LOCALE`` is the deliberate exception and the reason this function
+    reports the detected language back.  Unity sends ``auto`` on every spoken
+    question (``CalmClient.Locale``), and until 2026-09-17 ``auto`` fell through
+    a ``.get(locale, "en")`` default -- so *every* spoken Filipino question in
+    the product was transcribed in forced-English mode, producing exactly the
+    invented English sentence this docstring warns about.  The failure was
+    silent: ``detect_locale`` then read the invention, reported ``en-PH``, and
+    nothing recorded that the child had spoken Filipino.
     """
 
+    # Resolved before the engine is touched, so an unsupported locale costs
+    # nothing and cannot be masked by a model-loading failure.
+    if locale == AUTO_LOCALE:
+        # No forced language and no domain prompt: the prompt is written in one
+        # language and would bias detection toward it, which is the whole thing
+        # being avoided here.
+        language = None
+    else:
+        try:
+            language = WHISPER_LANGUAGE[locale]
+        except KeyError:
+            # Loud, not a default. A silent fallback to English here is what the
+            # bug above was made of.
+            raise ValueError(
+                f"unsupported locale for transcription: {locale!r}; "
+                f"expected one of {sorted(WHISPER_LANGUAGE)} or {AUTO_LOCALE!r}"
+            ) from None
+
     model = _get_stt_engine()
-    language = WHISPER_LANGUAGE.get(locale, "en")
     # A single faster-whisper model is shared by all FastAPI worker threads.
     # Serializing inference avoids overlapping GPU buffers and protects the
     # generator-backed segment stream from concurrent use.
     with _transcribe_lock:
-        segments, _ = model.transcribe(
+        segments, info = model.transcribe(
             str(path),
             beam_size=5,
             language=language,
-            initial_prompt=WHISPER_PROMPT.get(language),
+            initial_prompt=WHISPER_PROMPT.get(language) if language else None,
             condition_on_previous_text=False,
             vad_filter=True,
         )
-        return " ".join(segment.text for segment in segments).strip()
+        text = " ".join(segment.text for segment in segments).strip()
+
+    detected = getattr(info, "language", None) or language or "en"
+    probability = float(getattr(info, "language_probability", 0.0) or 0.0)
+    return Transcription(text=text, language=detected, language_probability=probability)
+
+
+def resolve_spoken_locale(transcription: Transcription) -> str:
+    """Pick the CALM locale for a transcript Whisper detected the language of.
+
+    Whisper can tell Tagalog from English; it has no concept of Taglish. So the
+    audio decides whether Filipino was spoken at all, and the *text* decides
+    between Filipino and Taglish -- which is precisely what ``detect_locale``
+    was written to do, from the question's Filipino function words.
+
+    Code-mixed speech is the case that needs both: a mostly-English Taglish
+    sentence is routinely detected as ``en``, so an English detection is not
+    allowed to overrule Filipino function words actually present in the text.
+    """
+
+    from_text = detect_locale(transcription.text)
+    if transcription.language in TAGALOG_WHISPER_CODES:
+        # Heard as Tagalog. If the text reads as pure English anyway (a very
+        # short or noisy utterance), trust the audio over the word list.
+        return from_text if from_text != "en-PH" else "fil-PH"
+    return from_text
 
 
 @app.post("/api/process-voice")
@@ -747,7 +836,9 @@ def process_voice_payload(
                         detail="Audio upload exceeds the configured size limit",
                     )
                 temporary.write(chunk)
-        transcription = _transcribe(temporary_path, locale)
+        # This endpoint's locale is always concrete (its Literal excludes
+        # "auto"), so the detected language carries no extra information here.
+        transcription = _transcribe(temporary_path, locale).text
         result = assistant.respond(
             question=transcription,
             context=context,
