@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import json
+import os
 import re
+import sys
 from collections import Counter
 from pathlib import Path
 from typing import Any
@@ -30,6 +32,18 @@ BLOCKED_LIFECYCLE_STATES = {
 UNITY_TASK_PATTERN = re.compile(
     r'\bId\s*=\s*"((?:(?:eq|fire|typ)_(?:home|sch|out)_\d+_[A-Za-z0-9_]+|tut_13_ask))"'
 )
+
+# Task-id drift between this repo and the Unity project. These two prefixes are
+# the ONLY errors CALM_UNITY_DRIFT=warn is allowed to downgrade, so a genuine
+# schema or corpus fault can never be waved through by the dev escape hatch.
+DRIFT_ERROR_PREFIXES = (
+    "Unity tasks missing from crosswalk: ",
+    "Crosswalk tasks absent from Unity: ",
+)
+# Env var name, and the one value that relaxes startup. Anything else (unset
+# included) keeps the check fatal.
+DRIFT_ENV_VAR = "CALM_UNITY_DRIFT"
+DRIFT_WARN = "warn"
 
 
 class CrosswalkValidationError(RuntimeError):
@@ -253,11 +267,11 @@ def validate_crosswalk(
             stale_config_ids = sorted(task_ids - unity_task_ids)
             if missing_from_config:
                 errors.append(
-                    "Unity tasks missing from crosswalk: " + ", ".join(missing_from_config)
+                    DRIFT_ERROR_PREFIXES[0] + ", ".join(missing_from_config)
                 )
             if stale_config_ids:
                 errors.append(
-                    "Crosswalk tasks absent from Unity: " + ", ".join(stale_config_ids)
+                    DRIFT_ERROR_PREFIXES[1] + ", ".join(stale_config_ids)
                 )
 
         unity_root = live_unity_path.parents[3] if len(live_unity_path.parents) > 3 else None
@@ -296,8 +310,28 @@ class UnityScenarioCrosswalk:
             self.cards_path,
             unity_library_path=None,
         )
+        # Validation always runs at full strength; only the RAISE is negotiable.
+        # A dev machine that has the Unity project checked out gets a hard stop
+        # on task-id drift, because a task Unity does not know about is a task
+        # whose push-to-talk silently no-ops in the headset. Set
+        # CALM_UNITY_DRIFT=warn for one process to boot anyway while the two
+        # sides are being reconciled -- the drift is then reported on every
+        # startup rather than forgotten.
+        self.unity_drift: list[str] = [
+            error
+            for error in report["errors"]
+            if error.startswith(DRIFT_ERROR_PREFIXES)
+        ]
         if report["status"] != "PASS":
-            raise CrosswalkValidationError("; ".join(report["errors"]))
+            blocking = [error for error in report["errors"] if error not in self.unity_drift]
+            relaxed = os.environ.get(DRIFT_ENV_VAR, "").strip().lower() == DRIFT_WARN
+            if blocking or not relaxed:
+                raise CrosswalkValidationError("; ".join(report["errors"]))
+            print(
+                f"WARNING [{DRIFT_ENV_VAR}={DRIFT_WARN}] Unity task drift tolerated: "
+                + "; ".join(self.unity_drift),
+                file=sys.stderr,
+            )
 
         self.data = _read_json(self.crosswalk_path)
         self.cards = _read_cards(self.cards_path)

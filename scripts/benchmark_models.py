@@ -27,15 +27,23 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from calm_core.llm import LLMUnavailable, OllamaClient
-from calm_core.rag_chat import RAGChatService
+from calm_core.rag_chat import MAX_ANSWER_WORDS, RAGChatService
 from calm_core.unity_crosswalk import UnityScenarioCrosswalk
 
 
 DEFAULT_FIXTURE = ROOT / "tests" / "fixtures" / "scope_eval.jsonl"
 DEFAULT_REPORT = ROOT / "docs" / "MODEL_BENCHMARK.md"
 
-#: The prompt caps the answer at one sentence of no more than 30 words.
-MAX_WORDS = 30
+#: Imported, never restated.  This file used to hard-code 30 words and a
+#: single-sentence rule; the prompt was later relaxed to three sentences and 45
+#: words, and nothing failed loudly -- the benchmark simply went on penalising
+#: every model for obeying the prompt it was actually given.  The 79 %
+#: "single sentence" score recorded for qwen2.5:3b in docs/MODEL_BENCHMARK.md
+#: is that artifact, not a model weakness.  Scoring a rule the prompt does not
+#: state is worse than not scoring it, so both numbers now come from the prompt.
+MAX_WORDS = MAX_ANSWER_WORDS
+#: "one to three short, calm sentences" -- rag_chat.py's answer rules.
+MAX_SENTENCES = 3
 HAZARD_PREFIX = {"earthquake": "EQ", "fire": "FIR", "typhoon": "TYP"}
 #: Words the prompt forbids outright, plus any surviving identifier.
 FORBIDDEN = ("protocol", "card", "source", "protokol")
@@ -79,9 +87,11 @@ def score_answer(row: dict[str, str], result: dict) -> dict[str, bool]:
         "scope_correct": result["question_scope"] == row["expected_scope"],
     }
     if generated:
-        # "exactly one calm sentence of no more than 30 words"
+        # "one to three short, calm sentences and no more than 45 words total"
         checks["within_word_cap"] = len(words) <= MAX_WORDS
-        checks["single_sentence"] = len(SENTENCE_END.findall(text.strip())) <= 1
+        checks["within_sentence_cap"] = (
+            len(SENTENCE_END.findall(text.strip())) <= MAX_SENTENCES
+        )
 
     if row["locale"] in {"fil-PH", "taglish-PH"}:
         spoken = {word.strip(".,!?").casefold() for word in words}
@@ -165,7 +175,7 @@ CHECK_LABELS = {
     "scope_correct": "Scope routed correctly",
     "no_leaked_terms": "No internal terms leaked",
     "within_word_cap": f"Within {MAX_WORDS}-word cap",
-    "single_sentence": "Single sentence",
+    "within_sentence_cap": f"At most {MAX_SENTENCES} sentences",
     "correct_locale": "Answered in asked locale",
     "evidence_matches_hazard": "Evidence matches hazard",
 }
@@ -211,7 +221,7 @@ def render(reports: list[dict], fixture: Path) -> str:
     lines.append("| **Overall** | " + " | ".join(overall) + " |")
     lines += [
         "",
-        "The word-cap and single-sentence rules are addressed to the model, so",
+        "The word-cap and sentence-cap rules are addressed to the model, so",
         "they are scored only on generated answers. The remaining checks apply",
         "to every reply, including the deterministic ones.",
     ]
@@ -276,7 +286,12 @@ def main() -> int:
             print(f"  FAILED: {report['error']}", file=sys.stderr)
         else:
             passed = sum(report["totals"].values())
-            possible = len(CHECK_LABELS) * report["rows"]
+            # Each check carries its own denominator -- the word and sentence
+            # caps apply only to generated answers, not to deterministic
+            # fallbacks.  Multiplying the check count by the row count assumes
+            # every check applies to every row, which under-reports the score
+            # and disagreed with the report file for the same run.
+            possible = sum(report["applicable"].values())
             print(
                 f"  {100 * passed // possible}% compliant, "
                 f"median {report['median_ms']} ms",
@@ -286,7 +301,15 @@ def main() -> int:
 
     args.report.parent.mkdir(parents=True, exist_ok=True)
     args.report.write_text(render(reports, args.fixture), encoding="utf-8")
-    print(f"\nwrote {args.report.relative_to(ROOT)}")
+    # A report written outside the repo is normal -- a scratch comparison, or a
+    # Colab run where the checkout lives somewhere else entirely.  relative_to
+    # raises on those, and it used to do so AFTER every model had been scored
+    # and the file written, turning a finished run into a traceback.
+    try:
+        shown = args.report.relative_to(ROOT)
+    except ValueError:
+        shown = args.report.resolve()
+    print(f"\nwrote {shown}")
     return 0
 
 

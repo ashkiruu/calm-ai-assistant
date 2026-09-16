@@ -15,6 +15,10 @@ tmp/
 graphify-out/
 archive/legacy_vector_db_raw_pdf_2026-07-31/
 
+# Build artifact from scripts/make_colab_bundle.py. Regenerated on demand and
+# ~1.6 MB of duplicated corpus, so it has no business in history.
+calm_bench_bundle.zip
+
 # Common local caches and secrets
 .pytest_cache/
 .mypy_cache/
