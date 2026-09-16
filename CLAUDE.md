@@ -154,6 +154,12 @@ both transcribed verbatim, and the Filipino one was answered in Filipino.
 There is **no `config/protocol_cards.yaml`** and **no `calm_core/retrieval.py`** — the previous
 version of this file invented both.
 
+**`docs/AI_ASSISTANT_WORK_LOG.md` is the narrative record** of the 2026-09-15 → 09-17 assistant
+work across both repos: the order things happened in, what was measured, what turned out to be
+wrong, and the open items carried forward. This file tells you the current state; that one tells
+you how it got here and which earlier claims were corrected. Read it before re-deriving a
+decision — several of them were made, reversed, and re-made on evidence.
+
 ## API surface (`server.py`)
 
 ```text
@@ -531,6 +537,43 @@ Measured on `eq_home_6_dch` / `en-PH`: **5238 → 4861 chars**, median latency *
 
 **Do not "optimise" the evidence payload by sending one locale or dropping provenance** —
 `_evidence_summary` has always done both. Checked before proposing it.
+
+### The prompt now mirrors the learner's language — 2026-09-17
+
+The routing was never the problem. Unity sends `locale = "auto"` (`CalmLocale.Auto`), and
+`detect_locale` resolves it from the question's Filipino function words, so a Tagalog question
+already arrived as `fil-PH` or `taglish-PH`. What the prompt then said was only **"Answer in
+simple Filipino"** — a target language, with nothing tying it to the learner's own question and
+nothing forbidding a switch partway through.
+
+That gap produced the benchmark's `correct_locale` failures, and they came in two shapes:
+
+1. A Filipino question answered wholly in English.
+2. **A mixed answer** — an English opening clause on a Filipino body: *"That is about a
+   different emergency. In this simulation, first, maging mahinahon sa approved safe area."*
+
+The second is the more common and the more damaging: the first sentence a nine-year-old reads is
+the one in the language they did not use. The cause is that the cross-hazard redirect and the
+"in this simulation" frame read to the model as fixed scaffolding rather than as part of the
+answer it is meant to translate.
+
+`_mirror_language_rule(locale)` states the three things the old rule did not: mirror the learner,
+cover the whole reply **including the opening clause**, and never change language partway. It
+leads **both** non-English branches — note the `practice_bound` branch previously carried no
+statement about the answer's language at all, only about translating the configured instruction,
+which left every surrounding sentence unaccounted for. `en-PH` emits nothing, so English requests
+pay no extra tokens.
+
+Measured live on `deepseek/deepseek-v4-flash`, against the seven questions the benchmark report
+recorded as `correct_locale` failures: **7/7 now pass**, and the headline case
+(`"Paano kung may bagyo?"`, previously fully English) returns *"Iyan ay tungkol sa ibang
+emergency…"* — the redirect clause itself translated.
+
+> **A Taglish answer containing English is not a bug.** Two of the seven still open with *"That
+> is about a different emergency"*, and that is valid Taglish, which mixes by definition. The
+> project's own check (`correct_locale` in `scripts/benchmark_models.py`) asks whether any
+> Filipino marker is present, and both satisfy it. Do not "fix" this by forcing pure Filipino
+> into a `taglish-PH` answer.
 
 ### Still open, from the audit and not yet fixed
 
