@@ -42,6 +42,18 @@ INDEX_PATH = ROOT / "index.html"
 RAG_TEST_PATH = ROOT / "rag_test.html"
 SIMULATION_PATH = ROOT / "simulation.html"
 STATIC_PATH = ROOT / "static"
+# FIRST, before anything reads os.getenv. Every CALM_* setting below is read at
+# import time, so a load placed after them is a load that does nothing for them.
+#
+# It was placed after them. CALM_CORPUS_MODE, CALM_SCHOOL_PROFILE,
+# CALM_MAX_AUDIO_BYTES and -- worst -- CALM_UNITY_DRIFT were therefore silently
+# unsettable from .env. CALM_UNITY_DRIFT is the documented escape hatch for a
+# crosswalk mismatch that otherwise stops the server booting at all, so it was
+# broken exactly where a facilitator would reach for it, on the one morning it
+# matters. An already-set variable still wins, so the Unity launcher's settings
+# and a developer's own key both survive this.
+_env_from_file = load_env_file()
+
 CORPUS_MODE = os.getenv("CALM_CORPUS_MODE", "development")
 SCHOOL_PROFILE_PATH = os.getenv("CALM_SCHOOL_PROFILE")
 MAX_AUDIO_BYTES = int(os.getenv("CALM_MAX_AUDIO_BYTES", str(25 * 1024 * 1024)))
@@ -53,11 +65,6 @@ assistant = CALMAssistant(
     else None,
 )
 unity_crosswalk = UnityScenarioCrosswalk()
-
-# Must run before _build_llm_provider(), which reads the key and the model at
-# construction time. An already-set variable wins, so the Unity launcher's
-# CALM_* settings and a developer's own key both survive this.
-_env_from_file = load_env_file()
 
 
 def _build_llm_provider():

@@ -35,6 +35,16 @@ DEFAULT_MODEL = "qwen/qwen3-32b"
 #: provider failing rather than the request being wrong. Everything else is a
 #: fault in the request itself and a retry would just repeat it.
 RETRY_STATUSES = frozenset({429, 500, 502, 503, 504})
+#: The only status that means "your request was wrong", as opposed to "the
+#: service is unavailable". It is the one case where resending a *different*
+#: payload is reasonable; resending after an outage is just doubling the wait.
+REJECTED_PARAMETER_STATUS = 400
+
+
+def _is_rejected_parameter(failure: LLMUnavailable) -> bool:
+    """True when the service rejected the request itself, not the connection."""
+
+    return getattr(failure, "status_code", None) == REJECTED_PARAMETER_STATUS
 DEFAULT_MAX_ATTEMPTS = 4
 
 #: A bad key and a dead server are not the same problem, and telling them apart
@@ -61,7 +71,7 @@ class OpenRouterClient:
         model: str | None = None,
         timeout_seconds: float | None = None,
         api_key: str | None = None,
-        max_attempts: int = DEFAULT_MAX_ATTEMPTS,
+        max_attempts: int | None = None,
         reasoning_effort: str | None = None,
     ) -> None:
         self.base_url = (
@@ -75,7 +85,17 @@ class OpenRouterClient:
         # client per model and a missing key should fail once the request is
         # made, with a message naming the variable, rather than at import.
         self._api_key = api_key or os.getenv("OPENROUTER_API_KEY", "")
-        self.max_attempts = max(1, max_attempts)
+        # Configurable because attempts x timeout is what a learner waits for.
+        # A benchmark sweep wants persistence; a child in a headset wants the
+        # reviewed fallback before Unity's own 40s timeout fires, otherwise the
+        # request is abandoned and the failure is reported as an unreachable
+        # server rather than an unreachable model.
+        self.max_attempts = max(
+            1,
+            max_attempts
+            if max_attempts is not None
+            else int(os.getenv("CALM_OPENROUTER_MAX_ATTEMPTS", str(DEFAULT_MAX_ATTEMPTS))),
+        )
         # Reasoning is OFF by default, which is the opposite of most defaults
         # and deliberate here.  A CALM answer is at most 45 words of reviewed
         # safety guidance; there is nothing to reason about, and reasoning
@@ -147,12 +167,23 @@ class OpenRouterClient:
         started = time.perf_counter()
         try:
             body = self._send_with_retry(self._request(payload))
-        except LLMUnavailable:
-            if not self.reasoning_effort:
-                raise
+        except LLMUnavailable as first_failure:
             # Some models declare reasoning mandatory and reject effort:"none"
             # with a 400.  Falling back to the model's own default is better
             # than losing the model from the comparison entirely.
+            #
+            # This retry MUST be limited to that one case.  The original guard
+            # was `if not self.reasoning_effort: raise`, and the default effort
+            # is the string "none" -- non-empty, therefore truthy -- so the
+            # guard never fired and *every* failure re-ran the whole ladder,
+            # including "OpenRouter is unreachable".  On a network that drops
+            # packets rather than refusing them that is 4 x 120s + backoff,
+            # twice: about sixteen minutes of server-side work for one child's
+            # question, long after Unity gave up at 40s.  The endpoint is a sync
+            # def, so each one holds an AnyIO worker thread and enough of them
+            # stop /health answering at all.
+            if not self.reasoning_effort or not _is_rejected_parameter(first_failure):
+                raise
             payload.pop("reasoning", None)
             body = self._send_with_retry(self._request(payload))
         elapsed_ms = round((time.perf_counter() - started) * 1000)
@@ -201,7 +232,13 @@ class OpenRouterClient:
             except urllib.error.HTTPError as exc:
                 last = exc
                 if exc.code not in RETRY_STATUSES or attempt == self.max_attempts - 1:
-                    raise LLMUnavailable(self._describe(exc)) from exc
+                    # The status travels with the exception so a caller can tell
+                    # "the request was malformed" from "the service is not
+                    # there". Sniffing the message text for a number would break
+                    # the moment the wording changed.
+                    failure = LLMUnavailable(self._describe(exc))
+                    failure.status_code = exc.code
+                    raise failure from exc
                 time.sleep(self._backoff(exc, attempt))
             except (urllib.error.URLError, TimeoutError, OSError) as exc:
                 last = exc

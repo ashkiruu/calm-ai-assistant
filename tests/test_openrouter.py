@@ -157,6 +157,65 @@ class OpenRouterClientTests(unittest.TestCase):
         self.assertIn("reasoning", sent[0])
         self.assertNotIn("reasoning", sent[1])
 
+    def test_an_unreachable_service_is_not_retried_twice_over(self) -> None:
+        """The gap that let a sixteen-minute hang ship.
+
+        The reasoning fallback re-sends without the `reasoning` parameter, which
+        is right for a model that rejects `effort: "none"` with a 400. It was
+        guarded by `if not self.reasoning_effort: raise` -- and the default
+        effort is the string "none", which is truthy, so the guard never fired
+        and EVERY failure ran the ladder twice.
+
+        On a network that drops packets rather than refusing them that is
+        4 x 120s + backoff, doubled: about sixteen minutes of server-side work
+        for one child's question, long after Unity gave up at 40s. The endpoint
+        is a sync def, so each one holds a worker thread.
+
+        `test_a_client_error_is_not_retried_with_the_same_payload` did not catch
+        it: a 400 is not in RETRY_STATUSES, so each ladder exits on its first
+        attempt and the doubling is invisible at two sends.
+        """
+
+        attempts = []
+
+        def unreachable(*_args, **_kwargs):
+            attempts.append(1)
+            raise urllib.error.URLError("connection timed out")
+
+        client = OpenRouterClient(
+            model="qwen/qwen3-32b", api_key="test-key", max_attempts=3
+        )
+        with patch("urllib.request.urlopen", side_effect=unreachable):
+            with patch("time.sleep"):
+                with self.assertRaisesRegex(LLMUnavailable, "unreachable"):
+                    client.chat(MESSAGES)
+
+        self.assertEqual(
+            len(attempts),
+            3,
+            "an outage must cost max_attempts, not max_attempts doubled by the "
+            "reasoning fallback",
+        )
+
+    def test_a_rejected_parameter_still_gets_the_second_chance(self) -> None:
+        """The narrowing must not remove the behaviour it was written for."""
+
+        sent: list[dict] = []
+
+        def reject_then_accept(request, **_kwargs):
+            payload = json.loads(request.data.decode("utf-8"))
+            sent.append(payload)
+            if "reasoning" in payload:
+                raise http_error(400, "reasoning is required for this model")
+            return FakeResponse(ok_body())
+
+        with patch("urllib.request.urlopen", side_effect=reject_then_accept):
+            result = self.client.chat(MESSAGES)
+
+        self.assertEqual(result.text, "Stay under the table.")
+        self.assertEqual(len(sent), 2)
+        self.assertNotIn("reasoning", sent[1])
+
     def test_reasoning_is_disabled_by_default(self) -> None:
         """Reasoning tokens come out of the same budget as the answer.
 
