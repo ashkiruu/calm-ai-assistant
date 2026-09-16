@@ -25,6 +25,7 @@ from calm_core import (
     RAGChatService,
     UnityScenarioCrosswalk,
 )
+from calm_core.env_file import load_env_file
 from calm_core.router import FALLBACKS
 from calm_core.session_log import SessionLog
 from calm_core.speech import (
@@ -50,6 +51,11 @@ assistant = CALMAssistant(
     else None,
 )
 unity_crosswalk = UnityScenarioCrosswalk()
+
+# Must run before _build_llm_provider(), which reads the key and the model at
+# construction time. An already-set variable wins, so the Unity launcher's
+# CALM_* settings and a developer's own key both survive this.
+_env_from_file = load_env_file()
 
 
 def _build_llm_provider():

@@ -19,10 +19,8 @@ archive/legacy_vector_db_raw_pdf_2026-07-31/
 # ~1.6 MB of duplicated corpus, so it has no business in history.
 calm_bench_bundle.zip
 
-# API keys. The OpenRouter key arrived as key.txt sitting in the repo root, one
-# `git add .` away from being published to a repo that is private today and may
-# not be forever. The live key lives in the OPENROUTER_API_KEY environment
-# variable instead; these patterns are the seatbelt for the next time.
+# API keys. These patterns stay as the seatbelt for anything that is NOT the
+# deliberately shared key below.
 key.txt
 *.key
 secrets.*
@@ -31,5 +29,16 @@ secrets.*
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
-.env
+# `.env` is COMMITTED here, deliberately, at the project owner's direction, so
+# that a collaborator can clone and run without setting anything up. The key in
+# it is spend-capped, which bounds the exposure to that cap.
+#
+# What the cap does NOT bound: OpenRouter is a GitHub secret-scanning partner,
+# so this key may be flagged and revoked at any time. When that happens KALMA
+# does NOT error -- it falls back to reviewed deterministic text and keeps
+# answering (llm_used: false, answer_source: deterministic_fallback), so the
+# symptom is silent. Rotating is one line in this one file.
+#
+# Anything else .env-shaped stays ignored.
 .env.*
+!.env.example
