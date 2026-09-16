@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import re
 import unittest
+from unittest.mock import patch
 
 import httpx
 
@@ -162,6 +163,83 @@ class ApiBoundaryTests(unittest.TestCase):
             contract.data["verification"]["callable_state_order"]
         )
         self.assertEqual(mapped_states, callable_states)
+
+
+class ChatErrorPathTests(unittest.TestCase):
+    """The HTTP boundary's error mapping, which nothing asserted before.
+
+    These matter because Unity turns each status into a different sentence in
+    front of a child, and a wrong status is a wrong diagnosis: a 404 tells
+    whoever is debugging to go and look at the crosswalk.
+    """
+
+    def post_chat(self, **body):
+        async def exercise():
+            transport = httpx.ASGITransport(app=server.app)
+            async with httpx.AsyncClient(
+                transport=transport, base_url="http://testserver"
+            ) as client:
+                return await client.post("/api/v1/chat", json=body)
+
+        return asyncio.run(exercise())
+
+    def test_an_unknown_task_is_a_404(self):
+        response = self.post_chat(
+            question="What should I do?", task_id="no_such_task", locale="en-PH"
+        )
+
+        self.assertEqual(response.status_code, 404)
+        self.assertIn("no_such_task", response.json()["detail"])
+
+    def test_a_server_side_key_error_is_not_reported_as_an_unknown_task(self):
+        """A corpus defect must not masquerade as a bad task id.
+
+        `except KeyError` around the whole pipeline caught any missing dict key
+        -- a card lacking a language_pack locale, say -- and returned 404
+        "unknown task id", sending the reader to the crosswalk to look for
+        something that was never wrong. Only UnknownTaskError is a 404 now.
+        """
+
+        with patch.object(
+            server.rag_chat, "answer", side_effect=KeyError("language_pack")
+        ):
+            with self.assertRaises(KeyError):
+                self.post_chat(
+                    question="What should I do?",
+                    task_id="eq_home_6_dch",
+                    locale="en-PH",
+                )
+
+    def test_an_empty_question_is_rejected_by_the_schema(self):
+        response = self.post_chat(question="", task_id="eq_home_6_dch", locale="en-PH")
+
+        self.assertEqual(response.status_code, 422)
+
+    def test_an_over_long_question_is_rejected(self):
+        response = self.post_chat(
+            question="x" * 501, task_id="eq_home_6_dch", locale="en-PH"
+        )
+
+        self.assertEqual(response.status_code, 422)
+
+    def test_an_unsupported_locale_is_rejected(self):
+        response = self.post_chat(
+            question="What should I do?", task_id="eq_home_6_dch", locale="es-ES"
+        )
+
+        self.assertEqual(response.status_code, 422)
+
+    def test_auto_locale_resolves_through_the_http_boundary(self):
+        """Typed Filipino must come back Filipino, not just in unit tests."""
+
+        response = self.post_chat(
+            question="Ano ang dapat kong gawin?",
+            task_id="eq_home_6_dch",
+            locale="auto",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["locale"], "fil-PH")
 
 
 if __name__ == "__main__":

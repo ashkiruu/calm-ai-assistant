@@ -29,6 +29,7 @@ from calm_core.env_file import load_env_file
 from calm_core.question_scope import detect_locale
 from calm_core.rag_chat import AUTO_LOCALE
 from calm_core.router import FALLBACKS
+from calm_core.unity_crosswalk import UnknownTaskError
 from calm_core.session_log import SessionLog
 from calm_core.speech import (
     MAX_SPEAKABLE_CHARS,
@@ -368,7 +369,13 @@ def chat(payload: RAGChatRequest) -> dict[str, Any]:
         # the learner the instruction.
         session_log.record(result["dashboard_event"])
         return result
-    except KeyError as exc:
+    except UnknownTaskError as exc:
+        # Only a genuinely unknown task id is a 404. A bare `except KeyError`
+        # here also swallowed corpus defects -- a card missing a language_pack
+        # locale, for instance -- and reported them to Unity as a bad task id,
+        # which sends whoever debugs it to the crosswalk to look for something
+        # that was never wrong. Any other KeyError is a server fault and should
+        # surface as one.
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
@@ -460,7 +467,13 @@ def voice_chat(
             previous_question=previous_question,
             previous_response=previous_response,
         )
-    except KeyError as exc:
+    except UnknownTaskError as exc:
+        # Only a genuinely unknown task id is a 404. A bare `except KeyError`
+        # here also swallowed corpus defects -- a card missing a language_pack
+        # locale, for instance -- and reported them to Unity as a bad task id,
+        # which sends whoever debugs it to the crosswalk to look for something
+        # that was never wrong. Any other KeyError is a server fault and should
+        # surface as one.
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc

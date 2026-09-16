@@ -46,6 +46,18 @@ DRIFT_ENV_VAR = "CALM_UNITY_DRIFT"
 DRIFT_WARN = "warn"
 
 
+class UnknownTaskError(KeyError):
+    """Unity asked about a task id the crosswalk does not carry.
+
+    A subclass of KeyError so existing callers keep working, but a distinct type
+    so the API can tell it apart from *any other* KeyError raised anywhere in the
+    pipeline. `/api/v1/chat` mapped a bare KeyError to HTTP 404 "unknown task
+    id"; a corpus defect -- a card missing a language_pack locale, say -- would
+    therefore have been reported to Unity as a bad task id, sending whoever
+    debugged it to the crosswalk to look for something that was never wrong.
+    """
+
+
 class CrosswalkValidationError(RuntimeError):
     """Raised when the Unity-to-corpus mapping is not safe to load."""
 
@@ -371,7 +383,7 @@ class UnityScenarioCrosswalk:
     def retrieval_plan(self, task_id: str) -> dict[str, Any]:
         task = self.get_task(task_id)
         if task is None:
-            raise KeyError(f"Unknown Unity task_id: {task_id}")
+            raise UnknownTaskError(f"Unknown Unity task_id: {task_id}")
         evidence_ids = task["protocol_ids"]
         return {
             "task_id": task_id,
