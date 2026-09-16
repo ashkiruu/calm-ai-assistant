@@ -7,7 +7,7 @@ import json
 import os
 import tempfile
 from pathlib import Path
-from threading import Lock
+from threading import Lock, Thread
 from typing import Any, Literal, NamedTuple
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
@@ -551,8 +551,36 @@ _stt_lock = Lock()
 _transcribe_lock = Lock()
 
 
+@app.on_event("startup")
+def _warm_speech_model() -> None:
+    """Load Whisper in the background so no child pays for it.
+
+    Measured on this project's CPU configuration: loading the model costs ~5.4 s
+    and transcribing a 4-second question ~5 s. Loaded lazily, the *first* spoken
+    question of a session therefore took about twice as long as every one after
+    it -- and the first question of a session is the one a nine-year-old is
+    least willing to wait through, and the one a facilitator judges the system
+    on.
+
+    A daemon thread, so the server still answers /health immediately and a
+    machine with no faster-whisper installed still starts: the failure surfaces
+    on the first real voice request exactly as it did before.
+
+    Fires on ASGI startup, not at import, so the test suite (which drives the
+    app through ASGITransport without lifespan) never loads a speech model.
+    """
+
+    def warm() -> None:
+        try:
+            _get_stt_engine()
+        except Exception as error:  # noqa: BLE001 - never block startup
+            print(f"CALM: speech model not pre-warmed ({error})", flush=True)
+
+    Thread(target=warm, name="calm-warm-stt", daemon=True).start()
+
+
 def _get_stt_engine() -> Any:
-    """Load Whisper only when the voice endpoint is first used."""
+    """Load Whisper, warmed at startup and lazily thereafter."""
 
     global _stt_engine
     if _stt_engine is not None:
