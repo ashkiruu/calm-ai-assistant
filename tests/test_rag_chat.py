@@ -771,6 +771,76 @@ class LanguageAnchorTests(unittest.TestCase):
 
         self.assertNotIn("reviewed sentence for this exact task", prompt)
 
+    def test_a_tagalog_question_is_told_to_get_a_tagalog_answer(self) -> None:
+        """Naming the target language is not the same as mirroring the learner.
+
+        The prompt has always said "Answer in simple Filipino". What it never
+        said was that the language comes *from the learner's question* and must
+        hold for the whole reply -- which is why answers came back with an
+        English opening clause bolted onto a Filipino body.
+        """
+
+        for locale, language in (
+            ("fil-PH", "simple Filipino"),
+            ("taglish-PH", "natural, simple Taglish"),
+        ):
+            with self.subTest(locale=locale):
+                prompt = self._system_prompt(
+                    question="Ano ang dapat kong gawin?",
+                    task_id="fire_home_5_exit",
+                    locale=locale,
+                )
+
+                self.assertIn(f"The learner asked in {language}", prompt)
+                self.assertIn("from the first word to the last", prompt)
+                self.assertIn("never change language partway through", prompt)
+
+    def test_the_mirroring_rule_covers_the_redirect_opening(self) -> None:
+        """The specific failure shape, stated in the prompt rather than hoped for.
+
+        Observed: "That is about a different emergency. In this simulation,
+        first, maging mahinahon sa approved safe area." The model treats the
+        redirect and the simulation frame as fixed scaffolding and leaves them
+        in English, so the first sentence a child reads is the one in the
+        language they did not use.
+        """
+
+        prompt = self._system_prompt(
+            question="Paano kung may bagyo?",
+            task_id="eq_home_3_box",
+            locale="fil-PH",
+        )
+
+        self.assertIn("opening clause about a different emergency", prompt)
+        self.assertIn("translate that opening too", prompt)
+
+    def test_english_prompt_is_not_told_to_mirror(self) -> None:
+        """A rule that only ever restates the obvious is wasted prompt budget."""
+
+        prompt = self._system_prompt(
+            question="What should I do?",
+            task_id="fire_home_5_exit",
+            locale="en-PH",
+        )
+
+        self.assertNotIn("The learner asked in", prompt)
+
+    def test_a_practice_bound_task_also_gets_the_mirroring_rule(self) -> None:
+        """This branch previously said nothing at all about the answer's language.
+
+        It carried only a "translate the configured instruction" rule, which
+        leaves every sentence around that instruction unaccounted for.
+        """
+
+        prompt = self._system_prompt(
+            question="Ano ang gagawin ko?",
+            task_id="eq_home_2_vase",
+            locale="fil-PH",
+        )
+
+        self.assertIn("The learner asked in simple Filipino", prompt)
+        self.assertIn("Translate the active simulation instruction", prompt)
+
 
 class OutputScrubbingTests(unittest.TestCase):
     def test_small_model_prompt_echo_is_removed_from_direct_command(self) -> None:

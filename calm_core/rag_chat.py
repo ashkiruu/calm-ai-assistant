@@ -122,6 +122,43 @@ LANGUAGE_RULE = (
     "word by word, and never invent a compound phrase that is not in the "
     "reviewed instruction."
 )
+#: Naming the target language once, as `LOCALE_NAMES` does, is not enough.  The
+#: benchmark's `correct_locale` failures are overwhelmingly one of two shapes,
+#: and neither is the model failing to know Filipino:
+#:
+#:   1. A Filipino question answered wholly in English.
+#:   2. A *mixed* answer -- an English opening clause bolted onto a Filipino
+#:      body, e.g. "That is about a different emergency. In this simulation,
+#:      first, maging mahinahon sa approved safe area."
+#:
+#: The second shape is the more common one and the more damaging: the sentence
+#: a nine-year-old reads first is the one in the language they did not use.  It
+#: happens because the cross-hazard redirect and the "in this simulation" frame
+#: read to the model as fixed scaffolding rather than as part of the answer it
+#: is supposed to translate.  So the rule has to say three things explicitly --
+#: mirror the learner, cover the whole answer including the opening, and never
+#: switch partway -- rather than just naming a language.
+def _mirror_language_rule(locale: str) -> str:
+    """Tell the model to answer in the language the learner actually used.
+
+    Only ever emitted for a non-English locale.  On `en-PH` the request either
+    genuinely was English or `detect_locale` already resolved it, so adding a
+    mirroring instruction there would spend tokens restating the obvious.
+    """
+
+    if locale == "en-PH":
+        return ""
+    return (
+        f"\n- The learner asked in {LOCALE_NAMES[locale]}, so answer in that "
+        "same language from the first word to the last. Never answer in English "
+        "a question that was not asked in English, and never change language "
+        "partway through. This covers the whole reply, including any opening "
+        "clause about a different emergency or about what happens in this "
+        "simulation -- translate that opening too instead of leaving it in "
+        "English."
+    )
+
+
 #: A worked example teaches a small model far better than a rule, but a fixed
 #: example is unsafe here: the model reused its props and actions on unrelated
 #: tasks, and a fire task answered with "stay under a sturdy table" is wrong
@@ -645,16 +682,21 @@ class RAGChatService:
         else:
             off_task_rule = ""
 
+        # The mirroring rule leads in both non-English branches. It is the one
+        # language instruction that applies no matter which evidence shape is in
+        # play, and the practice-bound branch previously had no statement about
+        # the answer's language at all -- only about translating the configured
+        # instruction, which left the surrounding sentences unaccounted for.
         if locale == "en-PH":
             language_rule = ""
         elif on_task and practice_bound:
-            language_rule = (
+            language_rule = _mirror_language_rule(locale) + (
                 "\n- Translate the active simulation instruction into short, simple "
                 "learner language. Preserve its exact action and training-prop boundary. "
                 "Do not replace it with conflicting real-world adult-handoff wording."
             )
         else:
-            language_rule = LANGUAGE_RULE
+            language_rule = _mirror_language_rule(locale) + LANGUAGE_RULE
 
         if general_qa:
             agency_rule = (
