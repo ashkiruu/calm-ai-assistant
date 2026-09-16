@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import io
 import json
+import os
 import unittest
 import urllib.error
 from unittest.mock import patch
@@ -84,9 +85,14 @@ class OpenRouterClientTests(unittest.TestCase):
         self.assertEqual(result.output_tokens, 21)
 
     def test_missing_key_names_the_variable(self) -> None:
-        client = OpenRouterClient(model="qwen/qwen3-32b", api_key="")
-        with self.assertRaisesRegex(LLMUnavailable, "OPENROUTER_API_KEY"):
-            client.chat(MESSAGES)
+        # The environment must be cleared explicitly. An empty `api_key` falls
+        # through to os.getenv (openrouter.py:77), so on a machine that has the
+        # key configured -- which is every machine that can actually run a
+        # sweep -- this test would construct a *working* client and fail.
+        with patch.dict(os.environ, {"OPENROUTER_API_KEY": ""}, clear=False):
+            client = OpenRouterClient(model="qwen/qwen3-32b", api_key="")
+            with self.assertRaisesRegex(LLMUnavailable, "OPENROUTER_API_KEY"):
+                client.chat(MESSAGES)
 
     def test_bad_key_is_not_reported_as_an_outage(self) -> None:
         with patch("urllib.request.urlopen", side_effect=http_error(401)):
