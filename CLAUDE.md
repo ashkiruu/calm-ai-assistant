@@ -249,6 +249,23 @@ Treat CALM_VR as the source of truth for Unity code, and port deliberately, one 
 
 ## Verify
 
+**Before a live session, run the preflight first.** It is the only thing that checks
+the stack rather than the configuration:
+
+```powershell
+.\venv\Scripts\python.exe scripts\preflight.py --expect-lan     # exit 1 on NO-GO
+```
+
+It really calls the model and really synthesises speech, because every failure that
+matters is something configured correctly and unreachable anyway. **`/health` cannot
+substitute**: its `"status": "ok"` is a hardcoded literal, `speech_synthesis.available`
+only reports whether `import edge_tts` worked, and `api_key_configured` means "a
+non-empty string exists". `/health` returns 200 on an air-gapped laptop. It stays that
+way on purpose — Unity probes it with a 10 s budget and it must be instant.
+
+`WARN` rows are decisions, not failures: they name what the learner will actually get
+(reviewed deterministic text if the model is unreachable, silent subtitles if TTS is).
+
 ```powershell
 .\venv\Scripts\python.exe -m unittest discover -s tests -v
 .\venv\Scripts\python.exe scripts\validate_missions.py                 # PASS, exit 0
@@ -574,6 +591,67 @@ emergency…"* — the redirect clause itself translated.
 > project's own check (`correct_locale` in `scripts/benchmark_models.py`) asks whether any
 > Filipino marker is present, and both satisfy it. Do not "fix" this by forcing pure Filipino
 > into a `taglish-PH` answer.
+
+## Headset-readiness pass — 2026-09-17
+
+Traced the whole path from a child's push-to-talk press to KALMA speaking: **31
+preconditions, 19 of which failed silently from inside the headset.** Fixed the ones
+that stop it working. The full list, with what each failure looked like, is in
+`docs/AI_ASSISTANT_WORK_LOG.md` §11.
+
+### Spoken Filipino was transcribed as English
+
+`/api/v1/voice-chat` accepts `locale="auto"` and passed it to
+`WHISPER_LANGUAGE.get(locale, "en")`. `"auto"` is not a key, so **every spoken
+question in the product was decoded in forced-English mode** — and `_transcribe`'s own
+docstring says that makes Whisper "invent a fluent English sentence that was never
+spoken". Unity sends `auto` on every voice question, so this was the only path a child
+used. Typed Filipino worked; spoken Filipino did not, which meant the language-mirroring
+prompt rule shipped the same day was defeated in production.
+
+`auto` now reaches Whisper as `language=None`, `resolve_spoken_locale` combines the
+audio's detected language with `detect_locale`'s reading of the text (Whisper can tell
+Tagalog from English but has no concept of Taglish), and `_transcribe` **raises** on an
+unknown locale instead of defaulting. `transcribed_language` rides in the response and
+the dashboard event, so a mishearing is visible rather than silent.
+
+### One unreachable model could occupy the server for ~16 minutes
+
+`openrouter.py`'s reasoning-fallback retry was guarded by `if not
+self.reasoning_effort: raise` — and the default effort is the **string `"none"`**,
+which is truthy. So every `LLMUnavailable`, including "unreachable", re-ran the whole
+4-attempt ladder. At 120 s per attempt on a network that drops rather than refuses
+packets: ~16 minutes for one question, long after Unity gave up at 40 s. The endpoints
+are sync `def`, so each one holds an AnyIO worker thread and enough of them stop
+`/health` answering at all.
+
+The retry is now gated on an actual HTTP 400 (the status travels on the exception),
+and `.env` sets `CALM_OPENROUTER_TIMEOUT_SECONDS=15` / `CALM_OPENROUTER_MAX_ATTEMPTS=2`.
+**Measured against a black-holed address: 192 s → 32 s**, inside Unity's timeout, so
+the child gets the reviewed fallback instead of an error.
+
+> The existing test did not catch it because it used a **400**, which is not in
+> `RETRY_STATUSES` and so exits each ladder on its first attempt — the doubling is
+> invisible at two sends. The unreachable case is now tested explicitly.
+
+### `.env` was loaded too late to configure anything early
+
+`load_env_file()` sat **below** the module-level `getenv` reads, so
+`CALM_CORPUS_MODE`, `CALM_SCHOOL_PROFILE`, `CALM_MAX_AUDIO_BYTES` and — worst —
+`CALM_UNITY_DRIFT` were silently unsettable from `.env`. `CALM_UNITY_DRIFT` is the
+documented escape hatch for a crosswalk mismatch that otherwise **stops the server
+booting at all**, so it was broken exactly where a facilitator would reach for it.
+Moved to the top of the module.
+
+### Other fixes
+
+- **Whisper is warmed at startup** in a daemon thread. Measured: ~5.4 s to load and
+  ~5 s to transcribe a 4 s question, so lazily the *first* question of a session took
+  twice as long as the rest — the one a facilitator judges the system on. Fires on ASGI
+  startup, not import, so the suite never loads a speech model.
+- **A corpus defect no longer reports as a bad task id.** `except KeyError -> 404`
+  wrapped the whole pipeline; only `UnknownTaskError` is a 404 now.
+- First tests for the API error paths, which had none.
 
 ### Still open, from the audit and not yet fixed
 

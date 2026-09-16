@@ -3,7 +3,7 @@
 A chronological record of the work done on the CALM AI assistant: what changed, why,
 what was measured, what turned out to be wrong, and what is still open.
 
-- **Period covered:** 2026-09-15 to 2026-09-17.
+- **Period covered:** 2026-09-15 to 2026-09-17 (§11 is the headset-readiness pass).
 - **Scope:** both halves of the assistant — the Python backend in this repo, and the
   Unity-side integration in `C:\CALM\CALM_VR`. The mission/storyboard/prop work in the
   VR repo is *not* covered here; that lives in `CALM_VR/CLAUDE.md`.
@@ -393,11 +393,23 @@ Measured 2026-09-17, not assumed:
 
 | Check | Result |
 |---|---|
-| `python -m unittest discover -s tests` | **203 passed, 0 failures** |
+| `python -m unittest discover -s tests` | **229 passed, 0 failures** |
+| `scripts/preflight.py --expect-lan` | **GO** — model, voice, speech and grounding verified live |
 | Live locale check, 7 previously-failing Tagalog questions (§7.5) | **7/7** answer in the learner's language |
+| Spoken Filipino end to end through `/api/v1/voice-chat` (§11.1) | `locale: fil-PH`, Filipino answer |
+| Model worst case on a black-holed network (§11.2) | **32 s**, inside Unity's 40 s, reviewed fallback delivered |
 | `scripts/validate_unity_crosswalk.py` against live `MissionLibrary.cs` | **exit 0**, `errors: []`, 9 missions, 56 tasks, 34 protocol cards |
-| Unity compile after the `tut_13_ask` fix | **0 `CS` errors** |
-| Backend repo | clean, all work committed |
+| Unity compile | **0 `CS` errors** |
+| Tutorial auto-walk | **ALL PASS — 14/14** |
+| Both repos | clean, all work committed |
+
+**Still unverifiable without hardware**, and first on the day: whether `adb push` lands
+where `Application.persistentDataPath` actually reads (there is no
+`WRITE_EXTERNAL_STORAGE` in the manifest, so an Internal resolution would make the push
+succeed into a directory the app never opens — the new startup log settles it), and
+whether the headset's Wi-Fi can route to the laptop's address at all. The laptop is on
+**Ethernet**; `Test Headset Reachability` probes from the laptop to itself and
+**cannot** detect a subnet split. Load `/health` in the headset's own browser.
 
 ---
 
@@ -422,23 +434,134 @@ Carried forward honestly rather than closed off.
 6. **The fixture is too small where it matters most.** 44 questions, but only **14
    non-English generated rows** — so "14/14 on locale" rests on fourteen data points.
    Widening the fixture is the single highest-value next step for any claim about locale.
-7. **`DEFAULT_MODEL` in `openrouter.py` is still `qwen/qwen3-32b`**, which is not the
-   benchmarked recommendation. Nothing is broken — the Unity launcher sets
-   `deepseek/deepseek-v4-flash` explicitly — but the code default and the documented
-   recommendation disagree, and whichever is wrong should be changed.
+7. ~~**`DEFAULT_MODEL` is still `qwen/qwen3-32b`**~~ — **closed 2026-09-17.** `.env` now
+   sets `CALM_OPENROUTER_MODEL=deepseek/deepseek-v4-flash`, and since `.env` is committed
+   and loaded first, every entry point agrees rather than only the Unity launcher.
+
+**Deferred deliberately (the session comes first):**
+
+10. **Pre-baking the deterministic answers as audio.** edge-tts is a cloud service and
+    there is no local TTS, so a dropout means a silent KALMA for the rest of a lesson —
+    which conflicts with the DRRMO stakeholder requirement about sound. The set is
+    closed and finite: **174 strings** (27 `FALLBACKS` + 6 tutorial-glossary + 141 card
+    `tts_text`). `CALM_VR/tools/guide_tts.py` already bakes via `/api/v1/speak` and did
+    the 151 guide lines, so this is the same job against a different string source.
+    Mitigated for now: the preflight WARNs when voice is unreachable, so it is a known
+    degradation rather than a surprise.
+11. **Stage 2 and Stage 3 of the improvement plan** — scope-gate refusals, wrong-phase
+    evidence, the evaluation fixture. Items 1, 2, 4 and 6 above. Deferred until after
+    the headset session.
 
 **From the Unity side:**
 
-8. **Nothing here has been tested on a Meta Quest 3.** The assistant defaults to
-   `127.0.0.1:8010`, which on a headset is the headset itself; LAN operation and
-   `insecureHttpOption` are a decision to take *with* a real server, not before.
+8. **Nothing here has been tested on a Meta Quest 3.** Everything in §11 was verified as
+   far as it can be without hardware. `docs/QUEST_LAN_SETUP.md` carries the on-the-day
+   procedure; the two things it cannot settle in advance are whether `adb push` lands
+   where `persistentDataPath` reads, and whether the headset's Wi-Fi can route to the
+   laptop's Ethernet address.
 9. **The CONTINUE button's discoverability is unverified by a human.** The control dock is
    its own always-visible anchor in Tutorial mode (yaw 40°, pitch −20°) and is *not*
    hidden behind the collapsible task tab — but nobody has watched a learner find it.
 
 ---
 
-## 11. Corrections made to earlier claims
+## 11. Headset-readiness pass (2026-09-17)
+
+A Quest 3 session was being arranged. The APK builds and the missions run; what was
+unproven was the assistant. Tracing the whole path from a push-to-talk press to KALMA
+speaking found **31 preconditions, 19 of which fail silently from inside the headset**,
+and no way at all for the wearer to see the resolved server address, whether the config
+file was found, or whether the task list loaded.
+
+### 11.1 The headline: spoken Filipino was transcribed as English
+
+Detailed in `CLAUDE.md`. The short version: `/api/v1/voice-chat` accepts `locale="auto"`
+and passed it straight to `WHISPER_LANGUAGE.get(locale, "en")`. `"auto"` is not a key.
+Every spoken question in the product was decoded in forced-English mode, which
+`_transcribe`'s own docstring warns makes Whisper invent English that was never spoken.
+
+**This defeated §7.5's language-mirroring rule, shipped the same day.** Typed Filipino
+worked; spoken Filipino — the only path a child uses — did not. A reminder that a fix
+verified at one layer is not verified at the layer that actually runs.
+
+### 11.2 A bug I introduced, and a test that gave false confidence
+
+The OpenRouter reasoning-fallback retry (§4) was guarded by `if not
+self.reasoning_effort: raise`. The default effort is the string `"none"` — truthy — so
+the guard never fired and every failure re-ran the whole retry ladder. Worst case ~16
+minutes of server-side work for one child's question.
+
+The test I wrote for that retry asserted exactly two sends and passed, because it used a
+**400**, which is not in `RETRY_STATUSES` and exits each ladder immediately. The
+doubling only appears on an *unreachable* provider, which nothing tested. Fixed, and the
+missing case is now tested.
+
+**The lesson worth keeping:** a test that exercises the cheap path of a retry ladder
+tells you nothing about the expensive one.
+
+### 11.3 What else was fixed
+
+| Fault | Failure mode |
+|---|---|
+| `load_env_file()` below the module-level `getenv` reads | `CALM_UNITY_DRIFT` — the escape hatch for a boot-blocking crosswalk mismatch — silently unsettable from `.env`. Also mine. |
+| Whisper loaded lazily | The first question of every session took ~2× the rest. Now warmed at startup. |
+| `except KeyError -> 404` around the whole pipeline | A corpus defect reported to Unity as a bad task id |
+| `clip.loadState` never checked | KALMA mimed: visor flashes Speaking, no sound, no log |
+| `Prewarm` untracked + flag cleared after the `yield` | The flag latched true on disposal and warming was disabled for the session |
+| Server bound to loopback | Headset got connection refused while `/health` answered on the laptop |
+| `calm-assistant.json` never regenerated | Shipped a LAN address two days stale |
+| Push-to-talk silent on two early returns | A dead button for up to 120 s, indistinguishable from broken |
+| One "KALMA is connecting" message | Stood for seven unrelated root causes, and promised "a moment" for permanent conditions |
+| PTT binding never validated | A dead talk button with no log, cue or exception at all |
+
+### 11.4 The safeguard: `scripts/preflight.py`
+
+`/health` cannot be a go/no-go — `"status": "ok"` is a literal, and it returns 200 on an
+air-gapped laptop. The preflight actually calls the model and actually synthesises
+speech, exits non-zero, and separates FAIL (a child will hit this) from WARN (the
+session runs degraded — a decision, not a surprise).
+
+**It earned itself on its first run**, failing on a headset config that still pointed at
+a network from two days earlier. That is precisely the failure that masquerades as a
+dead server.
+
+### 11.5 Measured numbers worth keeping
+
+| | |
+|---|---|
+| Whisper on CPU | ~5.4 s to load, ~5 s per 4-second question |
+| Warm voice round trip | ~8 s (transcribe + model) |
+| Model worst case, black-holed network | 192 s → **32 s** after the fix |
+| Unity voice timeout | 120 s → **40 s**, set from the measurement above |
+| Tests | 209 → **229** |
+
+### 11.6 Corrections I made to my own work this pass
+
+- My first endpoint diagnostic logged an **error** in the Editor, where the loopback
+  fallback makes it a non-issue. An error every play session is one people learn to
+  ignore; it is a `Log` there now, and still names what would happen on a headset.
+- `FindAdb` told someone who had adb installed to go and install adb — it checked
+  `AndroidSdkRoot`, `ANDROID_HOME` and PATH, all unset here, while adb sat in
+  `%LOCALAPPDATA%\Android\Sdk`.
+- The preflight crashed on an em-dash after every check had passed: this console is
+  cp932. Its output is ASCII only now.
+- A sync helper called `SaveCurrentModifiedScenesIfUserWantsTo()`, a modal dialog —
+  exactly what this project's own rules forbid, since MCP cannot dismiss one.
+- I reported the auto-walk as stalled when I had entered play mode while a forced
+  recompile was still settling. Re-run cleanly: ALL PASS. Procedure error, not a bug.
+
+### 11.7 A correction to the previous plan
+
+That plan presented the LAN bind and the config push as undiscovered blockers.
+`docs/QUEST_LAN_SETUP.md` in the Unity repo already documented both, and
+`scripts/start_lan_server.ps1` already bound `0.0.0.0`. The subagent that produced the
+findings had read only `CLAUDE.md` and `scripts/`, and I repeated its conclusions
+without checking. Genuinely new were the voice-locale bug, the retry ladder and the
+push-to-talk silence. **Read `docs/` before concluding something is undocumented.**
+
+---
+
+## 12. Corrections made to earlier claims
 
 Kept deliberately, in this project's existing style, because the corrections are as useful
 as the conclusions:
