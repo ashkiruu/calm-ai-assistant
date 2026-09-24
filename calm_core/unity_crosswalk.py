@@ -30,7 +30,7 @@ BLOCKED_LIFECYCLE_STATES = {
 # backend assistant. Reconcile the one Tutorial task that actually calls CALM
 # without claiming every tutorial TEACH/TRY beat is a backend task.
 UNITY_TASK_PATTERN = re.compile(
-    r'\bId\s*=\s*"((?:eq_home_[bda]\d+_[A-Za-z0-9_]+|(?:eq|fire|typ)_(?:home|sch|out)_\d+_[A-Za-z0-9_]+|tut_13_ask))"'
+    r'\bId\s*=\s*"((?:(?:eq|fire|typ)_home_[bda]\d+_[A-Za-z0-9_]+|(?:eq|fire|typ)_(?:home|sch|out)_\d+_[A-Za-z0-9_]+|tut_13_ask))"'
 )
 
 # Task-id drift between this repo and the Unity project. These two prefixes are

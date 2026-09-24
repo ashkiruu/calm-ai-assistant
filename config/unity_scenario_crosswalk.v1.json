@@ -600,6 +600,159 @@
       ]
     },
     {
+      "scene": "Fire_Home_V5",
+      "scenario_id": "unity-fire-home-v2",
+      "storyboard": "docs/storyboard/Fire_Home.md",
+      "hazard": "fire",
+      "setting": "home",
+      "location_type": "indoors",
+      "default_location_zone": "HOME_HALL",
+      "implemented_task_count": 9,
+      "tasks": [
+        {
+          "task_id": "fire_home_b1_spot",
+          "phase": "before",
+          "learner_action": "identify_five_home_fire_and_exit_hazards",
+          "active_simulation_instruction": "Look for the unattended candle, lit stove, gas tank, overloaded extension strip, and basket blocking the back door. Stay away from hot, gas, and electrical objects.",
+          "protocol_ids": [
+            "FIR-BEF-001"
+          ],
+          "mapping_status": "local_review",
+          "required_trusted_flags": {
+            "responsible_adult_present": false
+          },
+          "location_zone": "HOME_HALL"
+        },
+        {
+          "task_id": "fire_home_b2_backdoor",
+          "phase": "before",
+          "learner_action": "move_laundry_basket_clear_of_back_door",
+          "active_simulation_instruction": "Carry the laundry basket out of the back door's swing and put it beside the laundry sink.",
+          "protocol_ids": [
+            "FIR-BEF-002"
+          ],
+          "mapping_status": "local_review",
+          "required_trusted_flags": {
+            "responsible_adult_present": false
+          },
+          "location_zone": "HOME_DIRTY_KITCHEN"
+        },
+        {
+          "task_id": "fire_home_b3_plan",
+          "phase": "before",
+          "learner_action": "inspect_fire_route_and_meeting_place_on_family_plan",
+          "active_simulation_instruction": "Look at the family plan on the refrigerator. Find the front and back exits and the lamppost meeting place by the park.",
+          "protocol_ids": [
+            "FIR-BEF-002"
+          ],
+          "mapping_status": "local_review",
+          "required_trusted_flags": {
+            "responsible_adult_present": false
+          },
+          "location_zone": "HOME_KITCHEN"
+        },
+        {
+          "task_id": "fire_home_b4_rest",
+          "phase": "before",
+          "learner_action": "rest_by_sala_sofa_before_fire_event",
+          "active_simulation_instruction": "Go to the sofa in the sala and rest there briefly.",
+          "protocol_ids": [],
+          "mapping_status": "evidence_gap",
+          "required_trusted_flags": {
+            "responsible_adult_present": false
+          },
+          "location_zone": "HOME_SALA",
+          "scope_constraint": "This is a staging beat with no curated protocol card: resting in the configured VR sala before the drill's fire starts. Do not generalize it into advice about where to wait during a real fire."
+        },
+        {
+          "task_id": "fire_home_d1_low",
+          "phase": "during",
+          "learner_action": "crouch_below_smoke_layer",
+          "active_simulation_instruction": "Get down low, below the smoke, and stay clear of the kitchen fire.",
+          "protocol_ids": [
+            "FIR-DUR-004",
+            "FIR-DUR-007"
+          ],
+          "mapping_status": "local_review",
+          "required_trusted_flags": {
+            "responsible_adult_present": false,
+            "fire_or_smoke_confirmed": true,
+            "smoke_present": true,
+            "safe_exit_available": true
+          },
+          "location_zone": "HOME_SALA"
+        },
+        {
+          "task_id": "fire_home_d2_out",
+          "phase": "during",
+          "learner_action": "crawl_low_to_front_door_and_exit",
+          "active_simulation_instruction": "Stay low and crawl through the sala and foyer to the front door, away from the fire. Open the door and move onto the porch.",
+          "protocol_ids": [
+            "FIR-DUR-001",
+            "FIR-DUR-004",
+            "FIR-DUR-005",
+            "FIR-DUR-006",
+            "FIR-DUR-007"
+          ],
+          "mapping_status": "local_review",
+          "required_trusted_flags": {
+            "responsible_adult_present": false,
+            "fire_or_smoke_confirmed": true,
+            "smoke_present": true,
+            "safe_exit_available": true
+          },
+          "location_zone": "HOME_SALA"
+        },
+        {
+          "task_id": "fire_home_a1_alarm",
+          "phase": "after",
+          "learner_action": "shout_sunog_to_warn_neighbours_outside",
+          "active_simulation_instruction": "From outside, use TALK and shout 'Sunog!' so nearby people hear the warning.",
+          "protocol_ids": [
+            "FIR-DUR-001"
+          ],
+          "mapping_status": "local_review",
+          "required_trusted_flags": {
+            "responsible_adult_present": false,
+            "reentry_not_cleared": true
+          },
+          "location_zone": "HOME_FRONT_GARDEN",
+          "allow_cross_phase_grounding": true
+        },
+        {
+          "task_id": "fire_home_a2_meet",
+          "phase": "after",
+          "learner_action": "travel_to_park_lamppost_meeting_place",
+          "active_simulation_instruction": "Go through the pedestrian gate and along Sampaguita Street to the lamppost by the park entrance.",
+          "protocol_ids": [
+            "FIR-AFT-002"
+          ],
+          "mapping_status": "local_review",
+          "required_trusted_flags": {
+            "responsible_adult_present": false,
+            "reentry_not_cleared": true
+          },
+          "location_zone": "SUBDIVISION_STREET"
+        },
+        {
+          "task_id": "fire_home_a3_stay",
+          "phase": "after",
+          "learner_action": "stay_at_park_meeting_place_and_breathe_slowly",
+          "active_simulation_instruction": "Stay at the park lamppost, take slow breaths, and stay away from the burning house.",
+          "protocol_ids": [
+            "FIR-AFT-001",
+            "FIR-AFT-002"
+          ],
+          "mapping_status": "local_review",
+          "required_trusted_flags": {
+            "responsible_adult_present": false,
+            "reentry_not_cleared": true
+          },
+          "location_zone": "SUBDIVISION_PARK"
+        }
+      ]
+    },
+    {
       "scene": "Fire_School",
       "scenario_id": "unity-fire-school-v1",
       "storyboard": "docs/storyboard/Fire_School.md",
