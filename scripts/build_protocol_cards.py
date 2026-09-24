@@ -6,6 +6,7 @@ import csv
 import json
 from itertools import product
 from pathlib import Path
+import sys
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -13,6 +14,11 @@ SPECS_DIR = ROOT / "corpus" / "card_specs"
 OUTPUT = ROOT / "corpus" / "protocol_cards.jsonl"
 COVERAGE_OUTPUT = ROOT / "corpus" / "reports" / "coverage_matrix.csv"
 REVIEW_QUEUE_OUTPUT = ROOT / "corpus" / "reports" / "review_queue.csv"
+
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from calm_core.repository import card_sort_key  # noqa: E402
 
 HAZARD_APPROVALS = {
     "fire": ["BFP", "DepEd_or_local_DRRMO"],
@@ -192,7 +198,9 @@ def main() -> None:
     if duplicates:
         raise ValueError(f"Duplicate protocol IDs: {duplicates}")
 
-    cards = sorted((expand(spec) for spec in specs), key=lambda card: card["protocol_id"])
+    # Hazard, then before -> during -> after: the order the specs are authored in.
+    # A plain id sort put every AFT card ahead of BEF and DUR.
+    cards = sorted((expand(spec) for spec in specs), key=card_sort_key)
     with OUTPUT.open("w", encoding="utf-8", newline="\n") as stream:
         for card in cards:
             stream.write(json.dumps(card, ensure_ascii=False, separators=(",", ":")))

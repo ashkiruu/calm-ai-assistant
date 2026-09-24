@@ -47,6 +47,17 @@ FILIPINO_FUNCTION_WORDS = {
 }
 #: English function words that a Taglish sentence keeps even when the frame is
 #: Filipino. Used only to tell Taglish apart from pure Filipino.
+#: Filipino function words that are also everyday English words.  On their own
+#: they prove nothing: "What do I do at school?" and "May I go outside?" were
+#: read as Taglish and answered wholly in Filipino.  They count as Filipino
+#: evidence only when no English function word is present ("At may lindol"), or
+#: when a Filipino content word backs them up ("What if may lindol?").
+AMBIGUOUS_FILIPINO_WORDS = {"at", "may", "na"}
+FILIPINO_CONTENT_WORDS = {
+    "apoy", "baha", "bagyo", "bintana", "delikado", "labasan", "lamesa",
+    "ligtas", "lindol", "lumilindol", "lumindol", "mesa", "panganib",
+    "salamin", "sunog", "tulong", "ulan", "usok", "yanig",
+}
 ENGLISH_FUNCTION_WORDS = {
     "a", "and", "are", "can", "do", "does", "how", "i", "is", "it", "me", "my",
     "should", "the", "to", "what", "when", "where", "why", "you", "your",
@@ -78,9 +89,19 @@ PHASE_TERMS = {
     # next task step rather than naming the after phase. Treating those generic
     # dialogue words as trusted phase intent pulled learners away from the task
     # they were actually standing in.
-    "during": {"during", "habang", "happening", "nangyayari"},
+    #
+    # Third-person verb forms only ("starts", "stops"): the bare imperative
+    # "stop" is the first word of "Stop, drop and roll", a during-fire action,
+    # and must not read as the after phase.
+    "during": {"during", "habang", "happening", "nangyayari",
+               "while", "starts", "started", "begins", "strikes", "lumilindol"},
     "after": {"after", "pagkatapos", "later", "mamaya",
-              "stopped", "tumigil", "over", "tapos", "finish", "finished"},
+              "stopped", "tumigil", "over", "tapos", "finish", "finished",
+              "stops", "ends", "ended"},
+}
+#: Multi-word phase cues, matched on the lowered question text.
+PHASE_PHRASES = {
+    "after": ("all clear", "all-clear"),
 }
 
 SCOPE_ON_TASK = "on_task"
@@ -126,12 +147,14 @@ def detect_locale(question: str, default: str = "en-PH") -> str:
     words = {word for word in re.findall(r"[a-zA-Z]+", question.casefold())}
     if not words:
         return default
+    english = words & ENGLISH_FUNCTION_WORDS
     filipino = words & FILIPINO_FUNCTION_WORDS
+    if english and not words & FILIPINO_CONTENT_WORDS:
+        filipino -= AMBIGUOUS_FILIPINO_WORDS
     if not filipino:
         return default
     # Real English words alongside a Filipino frame is Taglish, not Filipino.
     # 'What if may lindol?' should not be answered in pure Filipino.
-    english = words & ENGLISH_FUNCTION_WORDS
     return "taglish-PH" if english else "fil-PH"
 
 
@@ -154,7 +177,13 @@ def question_phase(question: str) -> str | None:
     """Return the single lesson stage the question names, or None when ambiguous."""
 
     words = _normalize_words(question)
-    matches = [phase for phase, terms in PHASE_TERMS.items() if words & terms]
+    lowered = question.casefold()
+    matches = [
+        phase
+        for phase, terms in PHASE_TERMS.items()
+        if words & terms
+        or any(phrase in lowered for phrase in PHASE_PHRASES.get(phase, ()))
+    ]
     return matches[0] if len(matches) == 1 else None
 
 

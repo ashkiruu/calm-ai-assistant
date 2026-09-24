@@ -1,10 +1,15 @@
 from __future__ import annotations
 
+import json
 import tempfile
 import unittest
 from pathlib import Path
 
-from calm_core.unity_crosswalk import UnityScenarioCrosswalk, validate_crosswalk
+from calm_core.unity_crosswalk import (
+    DEFAULT_CROSSWALK,
+    UnityScenarioCrosswalk,
+    validate_crosswalk,
+)
 
 
 class UnityScenarioCrosswalkTests(unittest.TestCase):
@@ -160,6 +165,42 @@ class UnityReconciliationTests(unittest.TestCase):
 
         self.assertIn("missing from crosswalk", joined)
         self.assertIn("absent from Unity", joined)
+
+
+class CrossPhaseOrderTests(unittest.TestCase):
+    """A permitted cross-phase card may support a task but never lead it."""
+
+    def test_a_cross_phase_card_leading_a_task_is_rejected(self) -> None:
+        data = json.loads(
+            DEFAULT_CROSSWALK.read_text(encoding="utf-8")
+        )
+        task = next(
+            task
+            for mission in data["missions"]
+            for task in mission["tasks"]
+            if task["task_id"] == "fire_home_2_candle"
+        )
+        # Allowed: FIR-BEF-001 (before) then FIR-DUR-007 (during). Swap them.
+        task["protocol_ids"] = list(reversed(task["protocol_ids"]))
+
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "crosswalk.json"
+            path.write_text(json.dumps(data), encoding="utf-8")
+            report = validate_crosswalk(crosswalk_path=path)
+
+        self.assertTrue(
+            any(
+                "fire_home_2_candle" in error and "first protocol_id" in error
+                for error in report["errors"]
+            ),
+            report["errors"],
+        )
+
+    def test_the_shipped_crosswalk_leads_every_task_with_its_own_phase(self) -> None:
+        report = validate_crosswalk(unity_library_path=None)
+        self.assertFalse(
+            [error for error in report["errors"] if "first protocol_id" in error]
+        )
 
 
 if __name__ == "__main__":

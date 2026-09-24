@@ -421,8 +421,12 @@ Carried forward honestly rather than closed off.
 
 1. **Scope-gate false refusals.** "Can I take my toy?" is refused during a live
    earthquake — a reasonable child question treated as out of scope.
-2. **`in_hazard_off_task` on a critical task** calls the model with wrong-phase evidence
-   labelled `OK`.
+2. ~~**`in_hazard_off_task` on a critical task** calls the model with wrong-phase evidence
+   labelled `OK`.~~ **Closed 2026-09-24.** It was part of a wider defect: retrieval mixed before,
+   during and after cards (an alphabetical `AFT < BEF < DUR` tie-break plus phase-less pooling in
+   the Tutorial Q&A task). Live-task stage questions now defer deterministically, and every
+   answer draws from one stage. `tests/test_phase_coherence.py` sweeps all 56 tasks. The details
+   and a before/after table are in `CLAUDE.md` § "Phase-coherent retrieval — 2026-09-24".
 3. **`rag_chat.py` hardcodes `ProtocolRepository()`**, ignoring `CALM_CORPUS_MODE`.
 4. **No golden-answer test.** Nothing asserts that a known question produces a known good
    answer; the suite checks properties, not content.

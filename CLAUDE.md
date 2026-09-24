@@ -660,8 +660,8 @@ Moved to the top of the module.
   others depending on incidental token overlap. `CLAUDE.md` previously called the deterministic
   parts "perfect"; the golden set only contains trivially off-topic refusals, so the benchmark
   cannot see this.
-- **`in_hazard_off_task` on a critical task** sets `deferred=True` and then calls the model anyway,
-  with during-phase evidence, to answer an after-phase question — labelled `completion_code: "OK"`.
+- ~~**`in_hazard_off_task` on a critical task** calls the model with wrong-phase evidence~~ —
+  **closed 2026-09-24**, see the next section.
 - **`rag_chat.py` hardcodes `ProtocolRepository()`**, ignoring `CALM_CORPUS_MODE`, so the RAG path
   and the router can disagree about which cards are eligible.
 - **No golden-answer test exists** anywhere; every "safety" test on the generation path asserts a
@@ -669,6 +669,101 @@ Moved to the top of the module.
 - Prefix stability is still only **51 %** within a task and **9 %** across locales, because the
   system block puts locale- and task-variable text near the top. Reordering it is the largest
   remaining latency lever and is a pure string reshuffle.
+
+## Phase-coherent retrieval — 2026-09-24
+
+**Reported:** KALMA's answers mixed BEFORE, DURING and AFTER cards. **Confirmed** in
+`logs/sessions.jsonl` (every mixed answer was `tut_13_ask`) and by replay. The cards were
+correctly classified. **The retrieval code mixed them.**
+
+| Question (task) | Before | After |
+|---|---|---|
+| What should I do in a fire? (tut_13_ask) | FIR-**AFT**-001 + three DUR | four FIR-DUR, led by DUR-001 |
+| What should I do in an earthquake? (tut_13_ask) | EQ-AFT-003, EQ-BEF-003, EQ-AFT-004, EQ-AFT-006 | EQ-DUR-001, -003, -004, -002 |
+| What should I pack in a go bag? (tut_13_ask) | TYP-BEF-002, EQ-AFT-004, FIR-DUR-001, TYP-BEF-005 | TYP-BEF-002, -005, -004 |
+| What happens during the earthquake? (eq_home_5_cover) | EQ-**BEF**-001 only | EQ-DUR-001, -003, -002 |
+| What should I do after? (eq_home_6_dch, live) | model called with EQ-DUR-001 | deterministic cue + "We will learn about that later." |
+
+**Causes, each fixed:**
+
+- **Alphabetical tie-break.** `rank_educational_scored` fell back to `protocol_id`, and
+  `AFT < BEF < DUR`. On a generic question every P0 card tied at priority 100, so after-phase
+  cards led. It now breaks ties on an optional `phase_preference`, then priority, then
+  `card_sort_key` (hazard → before/during/after → id). `build_protocol_cards.py` writes the JSONL
+  in that order too. The card content is byte-identical as JSON; only the line order changed.
+- **No stage → all stages.** `_general_evidence` and the cross-hazard search pooled all three
+  phases when the child named none. `_answer_phase`: the stage the child named wins; a hazard
+  named without a stage means **during**; neither → lock to the top-ranked card's phase.
+  Cross-hazard also narrows to the mission's `setting` (falls back if empty).
+- **`in_hazard_off_task` led with the current task's card**, so the language anchor and the
+  "reviewed wording" rule pointed at the wrong stage. When no asked-stage card shared a word, it
+  answered from the current stage alone. It now sends **only** the asked stage's cards
+  (`evidence_scope: "asked_phase_evidence"`, replacing `task_plus_phase_evidence`, in the
+  `server.py` Literal too), and doesn't require word overlap. On a **live** task it defers
+  exactly like the cross-hazard path: no model call, `DEFERRED_DURING_CRITICAL_TASK`, the
+  existing reviewed defer line.
+- **Filter words scored as relevance.** Inside a fire/during pool, "fire" and "during" in the
+  question rewarded cards that happen to repeat them. `rank_educational_scored(ignore_terms=)`
+  drops them. The stopword list also gained `an`, `are`, `be`, `can`, `if`, `of`, `that`,
+  `there`, `this`: "in **an** earthquake" was matching "an unsafe area" and outranking Drop,
+  Cover and Hold On.
+- **Missing stage words.** `stops`/`ends`/`ended`/"all clear" → after;
+  `while`/`starts`/`started`/`begins`/`strikes`/`lumilindol` → during. Bare `stop`/`start` are
+  deliberately absent, because "Stop, drop and roll" is a during-fire action.
+- **Instruction without its short command.** The anchor, the "reviewed wording" rule, the
+  offline fallback and `_trusted_replacement` now use `tts_text` (short + instruction).
+  FIR-DUR-004's instruction never says "get low"; only its short command does. Deferrals keep
+  `instruction` alone for the 115-char subtitle band.
+- **Cross-phase crosswalk cards** (5 tasks, `allow_cross_phase_grounding`) now carry a `stage`
+  in the evidence. When any supplied card is from another stage, the prompt says it is a
+  boundary, not a step. `validate_crosswalk` now rejects a task whose **first** card is
+  cross-phase while it has a same-phase card.
+
+`PROMPT_POLICY_VERSION` is now `calm-rag-v5-phase-coherent`. **Don't compare benchmark
+numbers across it unmarked:** six fixture questions (live-task stage questions) now defer
+deterministically, so generated coverage for the same model drops 29 → 23 by design.
+Measured on `deepseek/deepseek-v4-flash`: 95 %, locale 11/11, leaks 23/23, pipeline 44/44.
+
+`tests/test_phase_coherence.py` sweeps **every crosswalk task**. It checks on-task, each other
+stage, the other hazard, and ten general questions, and asserts one stage per answer. This is the
+first outcome test on the retrieval path. Suite: **241 tests**, one failure, which is the real
+Unity drift below.
+
+## English questions answered in Filipino — 2026-09-24
+
+Unity sends `locale="auto"` on every question (all 9 scenes checked), so the server picks the
+answer language. It could pick Filipino for English in two places:
+
+- **`detect_locale` counted `at`, `may`, `na` as Filipino.** They are everyday English words.
+  "May I go outside now?" and "What do I do at school?" resolved to `taglish-PH`, and live
+  deepseek answered the first *"Huwag. Manatili ka sa loob…"*. These three now count only with
+  no English function word present, or with a Filipino content word ("What if may lindol?"
+  stays Taglish).
+- **Voice: unrestricted Whisper detection, then "trust the audio".** On Philippine-accented
+  English (edge-tts clips, clean and noisy) Whisper picked **Malay** on up to 4/9 and
+  *transcribed the question into Malay* ("Apa yang berlaku?"). It picked **Tagalog** often enough
+  that `resolve_spoken_locale` answered correctly heard English in Filipino. Now
+  `_choose_spoken_language` compares only P(en) and P(tl) from `detect_language`, then
+  transcribes forced. A Tagalog-heard transcript with English function words resolves to
+  `en-PH`. Measured through `server._transcribe`: **0/108** wrong-language, **0** Malay
+  transcripts, over 4 voices × clean/10 dB/5 dB.
+- `transcribed_language` was emitted but **dropped by the session-log allowlist**, and the test
+  for it stubbed `record`. It is now an extended field, and a test goes through the real sink.
+
+Benchmark after the change: locale 11/11, sentence cap 18/23 (20/23 earlier today). The five
+violations are all in the right language, four are cross-hazard answers, and it's likely run
+variance. Watch it on the next sweep.
+
+**Tests still write to the live `logs/sessions.jsonl`** unless `CALM_SESSION_LOG` is set. The
+`test-model` rows there are from test runs, not learners.
+
+### Unity drift, found 2026-09-24, NOT fixed — the server won't boot without the flag
+
+CALM_VR commit `b130926` ("earthquake finalization WIP", 2026-09-21) added four tasks to
+`MissionLibrary.cs` that the crosswalk doesn't carry: `eq_home_10_stayout`,
+`eq_sch_10_danger`, `eq_sch_11_headcount`, `eq_out_6_stayput`. Startup raises without
+`CALM_UNITY_DRIFT=warn`, and push-to-talk silently no-ops on those four tasks. Mapping them to
+cards is content work, so it was left to the owner. The storyboard rows decide it.
 
 ## Rules that still bind
 

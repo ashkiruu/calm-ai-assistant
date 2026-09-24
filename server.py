@@ -5,6 +5,7 @@ from __future__ import annotations
 from copy import deepcopy
 import json
 import os
+import re
 import tempfile
 from pathlib import Path
 from threading import Lock, Thread
@@ -26,7 +27,7 @@ from calm_core import (
     UnityScenarioCrosswalk,
 )
 from calm_core.env_file import load_env_file
-from calm_core.question_scope import detect_locale
+from calm_core.question_scope import ENGLISH_FUNCTION_WORDS, detect_locale
 from calm_core.rag_chat import AUTO_LOCALE
 from calm_core.router import FALLBACKS
 from calm_core.unity_crosswalk import UnknownTaskError
@@ -167,7 +168,7 @@ CompletionCode = Literal[
 ]
 EvidenceScope = Literal[
     "task_evidence",
-    "task_plus_phase_evidence",
+    "asked_phase_evidence",
     "asked_hazard_evidence",
     "general_evidence",
     "none",
@@ -782,9 +783,7 @@ def _transcribe(path: Path, locale: str = "en-PH") -> Transcription:
     # Resolved before the engine is touched, so an unsupported locale costs
     # nothing and cannot be masked by a model-loading failure.
     if locale == AUTO_LOCALE:
-        # No forced language and no domain prompt: the prompt is written in one
-        # language and would bias detection toward it, which is the whole thing
-        # being avoided here.
+        # Chosen below, between English and Tagalog only.
         language = None
     else:
         try:
@@ -802,19 +801,54 @@ def _transcribe(path: Path, locale: str = "en-PH") -> Transcription:
     # Serializing inference avoids overlapping GPU buffers and protects the
     # generator-backed segment stream from concurrent use.
     with _transcribe_lock:
+        source: Any = str(path)
+        probability: float | None = None
+        if language is None:
+            from faster_whisper import decode_audio
+
+            source = decode_audio(
+                str(path), sampling_rate=model.feature_extractor.sampling_rate
+            )
+            language, probability = _choose_spoken_language(model, source)
         segments, info = model.transcribe(
-            str(path),
+            source,
             beam_size=5,
             language=language,
-            initial_prompt=WHISPER_PROMPT.get(language) if language else None,
+            initial_prompt=WHISPER_PROMPT.get(language),
             condition_on_previous_text=False,
             vad_filter=True,
         )
         text = " ".join(segment.text for segment in segments).strip()
 
-    detected = getattr(info, "language", None) or language or "en"
-    probability = float(getattr(info, "language_probability", 0.0) or 0.0)
-    return Transcription(text=text, language=detected, language_probability=probability)
+    if probability is None:
+        probability = float(getattr(info, "language_probability", 0.0) or 0.0)
+    return Transcription(text=text, language=language, language_probability=probability)
+
+
+def _choose_spoken_language(model: Any, audio: Any) -> tuple[str, float]:
+    """Pick English or Tagalog from Whisper's language scores, nothing else.
+
+    Unrestricted detection chooses among ~100 languages.  On Philippine-accented
+    English it picked Malay on up to 4 of 9 test clips and then *transcribed the
+    question into Malay* ("Apa yang berlaku?"), and it picked Tagalog for plain
+    English often enough to answer an English-speaking child in Filipino.  CALM
+    speaks two languages, so the choice is between those two.  Measured on 54
+    en-PH / fil-PH clips, clean and noisy: 51 correct, against 5 of 18 English
+    clips wrong unrestricted.  The residual misses are English heard as Tagalog,
+    which `resolve_spoken_locale` catches from the transcript.
+    """
+
+    try:
+        _, _, scores = model.detect_language(audio, vad_filter=True)
+    except ValueError:
+        # Silero found no speech at all, and faster-whisper 1.1.0 then
+        # concatenates an empty list.  Score the raw audio instead; the
+        # transcription that follows reports "no speech" the normal way.
+        _, _, scores = model.detect_language(audio, vad_filter=False)
+    probabilities = dict(scores)
+    english = probabilities.get("en", 0.0)
+    tagalog = max(probabilities.get(code, 0.0) for code in TAGALOG_WHISPER_CODES)
+    return ("tl", tagalog) if tagalog > english else ("en", english)
 
 
 def resolve_spoken_locale(transcription: Transcription) -> str:
@@ -831,10 +865,17 @@ def resolve_spoken_locale(transcription: Transcription) -> str:
     """
 
     from_text = detect_locale(transcription.text)
-    if transcription.language in TAGALOG_WHISPER_CODES:
-        # Heard as Tagalog. If the text reads as pure English anyway (a very
-        # short or noisy utterance), trust the audio over the word list.
-        return from_text if from_text != "en-PH" else "fil-PH"
+    if transcription.language in TAGALOG_WHISPER_CODES and from_text == "en-PH":
+        # Heard as Tagalog, but the words read as English.  This used to trust
+        # the audio unconditionally, so "How long do I stay here?" -- heard
+        # correctly, word for word -- was answered in Filipino.  Words that come
+        # out English even when decoded in Tagalog mode are stronger evidence
+        # than the audio guess, so English function words settle it.  Only a
+        # short content-only utterance ("Lindol?") still defers to the audio.
+        english_words = set(re.findall(r"[a-z]+", transcription.text.casefold()))
+        if english_words & ENGLISH_FUNCTION_WORDS:
+            return "en-PH"
+        return "fil-PH"
     return from_text
 
 

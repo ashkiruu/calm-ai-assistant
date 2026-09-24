@@ -70,6 +70,7 @@ EXTENDED_FIELDS = {
     "prompt_policy_version",
     "question_scope",
     "setting",
+    "transcribed_language",
 }
 
 # These fields are intentionally useful for prototype evaluation but are not
