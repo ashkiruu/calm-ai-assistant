@@ -13,8 +13,8 @@ class UnityScenarioCrosswalkTests(unittest.TestCase):
         cls.crosswalk = UnityScenarioCrosswalk()
 
     def test_loads_all_implemented_unity_tasks(self) -> None:
-        self.assertEqual(self.crosswalk.mission_count, 9)
-        self.assertEqual(self.crosswalk.task_count, 56)
+        self.assertEqual(self.crosswalk.mission_count, 10)
+        self.assertEqual(self.crosswalk.task_count, 71)
 
     def test_covers_all_three_hazards(self) -> None:
         hazards = {
@@ -73,6 +73,21 @@ class UnityScenarioCrosswalkTests(unittest.TestCase):
             {"hazard": "earthquake", "phase": "before", "setting": "home"},
         )
 
+    def test_v2_home_go_bag_keeps_its_evidence_gap_explicit(self) -> None:
+        task = self.crosswalk.get_task("eq_home_a2_gobag")
+        self.assertEqual(task["scene"], "Earthquake_Home_V5")
+        self.assertEqual(task["mapping_status"], "evidence_gap")
+        self.assertEqual(task["protocol_ids"], [])
+        self.assertTrue(task["scope_constraint"])
+
+    def test_v2_home_park_task_uses_outdoor_evidence(self) -> None:
+        plan = self.crosswalk.retrieval_plan("eq_home_a4_street")
+        self.assertEqual(plan["retrieval_filters"]["setting"], "outdoor")
+        self.assertEqual(
+            [card["protocol_id"] for card in plan["retrieved_safety_evidence"]],
+            ["EQ-AFT-003"],
+        )
+
     def test_unknown_unity_task_is_rejected(self) -> None:
         with self.assertRaisesRegex(KeyError, "Unknown Unity task_id"):
             self.crosswalk.retrieval_plan("not_a_real_task")
@@ -81,7 +96,7 @@ class UnityScenarioCrosswalkTests(unittest.TestCase):
         report = validate_crosswalk()
 
         self.assertEqual(report["status"], "PASS", report["errors"])
-        self.assertEqual(report["task_count"], 56)
+        self.assertEqual(report["task_count"], 71)
 
 
 class UnityReconciliationTests(unittest.TestCase):

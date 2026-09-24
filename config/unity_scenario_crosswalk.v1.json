@@ -32,7 +32,7 @@
       "setting": "home",
       "location_type": "indoors",
       "default_location_zone": "HOME_INTERIOR",
-      "implemented_task_count": 9,
+      "implemented_task_count": 10,
       "tasks": [
         {
           "task_id": "eq_home_1_spot",
@@ -125,6 +125,203 @@
           "protocol_ids": ["EQ-AFT-002", "EQ-AFT-004"],
           "mapping_status": "ready",
           "required_trusted_flags": {"hazard_active": false, "shaking_active": false, "aftershock_active": false}
+        },
+        {
+          "task_id": "eq_home_10_stayout",
+          "phase": "after",
+          "learner_action": "wait_at_outdoor_meeting_place",
+          "active_simulation_instruction": "Stay in the configured outdoor green circle and wait there until a grown-up arrives.",
+          "protocol_ids": ["EQ-AFT-004"],
+          "mapping_status": "ready",
+          "required_trusted_flags": {"hazard_active": false, "shaking_active": false, "aftershock_active": false}
+        }
+      ]
+    },
+    {
+      "scene": "Earthquake_Home_V5",
+      "scenario_id": "unity-earthquake-home-v2",
+      "storyboard": "docs/storyboard/Earthquake_Home.md",
+      "hazard": "earthquake",
+      "setting": "home",
+      "location_type": "indoors",
+      "default_location_zone": "HOME_SALA",
+      "implemented_task_count": 11,
+      "tasks": [
+        {
+          "task_id": "eq_home_b1_spot",
+          "phase": "before",
+          "learner_action": "identify_home_falling_glass_and_exit_hazards",
+          "active_simulation_instruction": "Look at the tall cabinet, high shelf, picture, window, and objects blocking the foyer floor. Stay away from high, heavy, and glass hazards.",
+          "protocol_ids": [
+            "EQ-BEF-003"
+          ],
+          "mapping_status": "local_review",
+          "required_trusted_flags": {
+            "responsible_adult_present": false,
+            "unsafe_object_visible": true
+          },
+          "location_zone": "HOME_SALA"
+        },
+        {
+          "task_id": "eq_home_b2_path",
+          "phase": "before",
+          "learner_action": "clear_lightweight_objects_from_exit_path",
+          "active_simulation_instruction": "Put the school bag and toy truck from the foyer floor into the toy box beside the wall.",
+          "protocol_ids": [
+            "EQ-BEF-001"
+          ],
+          "mapping_status": "local_review",
+          "required_trusted_flags": {
+            "responsible_adult_present": false
+          },
+          "location_zone": "HOME_FOYER"
+        },
+        {
+          "task_id": "eq_home_b3_cover",
+          "phase": "before",
+          "learner_action": "choose_sturdy_dining_table_as_cover",
+          "active_simulation_instruction": "Choose the strong dining table as your cover spot, away from the cabinet, window, and doorway.",
+          "protocol_ids": [
+            "EQ-BEF-001"
+          ],
+          "mapping_status": "local_review",
+          "required_trusted_flags": {
+            "responsible_adult_present": false,
+            "approved_cover_reachable": true
+          },
+          "location_zone": "HOME_DINING"
+        },
+        {
+          "task_id": "eq_home_b4_plan",
+          "phase": "before",
+          "learner_action": "inspect_family_emergency_plan",
+          "active_simulation_instruction": "Look at the family plan on the refrigerator. Trace the front door, gate, and park route to the open lawn meeting place.",
+          "protocol_ids": [
+            "EQ-BEF-001"
+          ],
+          "mapping_status": "local_review",
+          "required_trusted_flags": {
+            "responsible_adult_present": false
+          },
+          "location_zone": "HOME_KITCHEN"
+        },
+        {
+          "task_id": "eq_home_d1_dch",
+          "phase": "during",
+          "learner_action": "drop_cover_and_hold_table_leg",
+          "active_simulation_instruction": "Drop under the strong dining table, cover yourself, and hold a table leg until the shaking stops.",
+          "protocol_ids": [
+            "EQ-DUR-001",
+            "EQ-DUR-002",
+            "EQ-DUR-003"
+          ],
+          "mapping_status": "ready",
+          "required_trusted_flags": {
+            "responsible_adult_present": false,
+            "shaking_active": true,
+            "approved_cover_reachable": true
+          },
+          "location_zone": "HOME_DINING"
+        },
+        {
+          "task_id": "eq_home_a1_exit",
+          "phase": "after",
+          "learner_action": "walk_out_via_front_door_around_debris",
+          "active_simulation_instruction": "Walk through the hall and foyer to the front door. Go around the broken glass and fallen furniture.",
+          "protocol_ids": [
+            "EQ-AFT-002"
+          ],
+          "mapping_status": "local_review",
+          "required_trusted_flags": {
+            "responsible_adult_present": false,
+            "structure_damaged_or_not_cleared": true,
+            "near_falling_or_glass_hazard": true
+          },
+          "location_zone": "HOME_DINING"
+        },
+        {
+          "task_id": "eq_home_a2_gobag",
+          "phase": "after",
+          "learner_action": "take_ready_go_bag_and_leave_other_items",
+          "active_simulation_instruction": "Take the ready go-bag beside the front door. Leave the charging tablet and toy robot behind.",
+          "protocol_ids": [],
+          "mapping_status": "evidence_gap",
+          "required_trusted_flags": {
+            "responsible_adult_present": false,
+            "structure_damaged_or_not_cleared": true
+          },
+          "location_zone": "HOME_FOYER",
+          "scope_constraint": "This configured VR go-bag choice has no curated protocol card yet; the storyboard instruction is not retrieval evidence."
+        },
+        {
+          "task_id": "eq_home_a3_aftershock",
+          "phase": "after",
+          "learner_action": "crouch_in_open_garden_and_cover_head_and_neck",
+          "active_simulation_instruction": "Move to the open front garden spot, crouch, and cover your head and neck with both arms until the aftershock stops.",
+          "protocol_ids": [
+            "EQ-AFT-006",
+            "EQ-DUR-004"
+          ],
+          "mapping_status": "ready",
+          "required_trusted_flags": {
+            "responsible_adult_present": false,
+            "aftershock_active": true
+          },
+          "location_zone": "HOME_FRONT_GARDEN",
+          "setting": "outdoor",
+          "location_type": "outdoor",
+          "allow_cross_phase_grounding": true
+        },
+        {
+          "task_id": "eq_home_a4_street",
+          "phase": "after",
+          "learner_action": "walk_to_park_away_from_post_and_wire",
+          "active_simulation_instruction": "Walk from the gate toward the park lawn, keeping clear of the leaning electric post and hanging wire.",
+          "protocol_ids": [
+            "EQ-AFT-003"
+          ],
+          "mapping_status": "ready",
+          "required_trusted_flags": {
+            "responsible_adult_present": false,
+            "near_falling_or_glass_hazard": true
+          },
+          "location_zone": "SUBDIVISION_STREET",
+          "setting": "outdoor",
+          "location_type": "outdoor"
+        },
+        {
+          "task_id": "eq_home_a5_openspot",
+          "phase": "after",
+          "learner_action": "choose_open_park_lawn_circle",
+          "active_simulation_instruction": "Choose the marked open lawn circle, away from the covered court, mango tree, and electric post.",
+          "protocol_ids": [
+            "EQ-AFT-003"
+          ],
+          "mapping_status": "ready",
+          "required_trusted_flags": {
+            "responsible_adult_present": false,
+            "safe_zone_id": "EQ_SafeCircle"
+          },
+          "location_zone": "SUBDIVISION_PARK",
+          "setting": "outdoor",
+          "location_type": "outdoor"
+        },
+        {
+          "task_id": "eq_home_a6_calm",
+          "phase": "after",
+          "learner_action": "remain_in_open_lawn_and_breathe_slowly",
+          "active_simulation_instruction": "Stay in the open lawn circle, take a slow breath, and do not go back toward the house.",
+          "protocol_ids": [
+            "EQ-AFT-004"
+          ],
+          "mapping_status": "ready",
+          "required_trusted_flags": {
+            "responsible_adult_present": false,
+            "learner_attempting_reentry": true
+          },
+          "location_zone": "SUBDIVISION_PARK_LAWN",
+          "setting": "outdoor",
+          "location_type": "outdoor"
         }
       ]
     },
@@ -136,7 +333,7 @@
       "setting": "school",
       "location_type": "indoors",
       "default_location_zone": "CLASSROOM_A",
-      "implemented_task_count": 9,
+      "implemented_task_count": 11,
       "tasks": [
         {
           "task_id": "eq_sch_1_map",
@@ -155,6 +352,19 @@
           "protocol_ids": ["EQ-BEF-001"],
           "mapping_status": "local_review",
           "required_trusted_flags": {"hazard_active": false}
+        },
+        {
+          "task_id": "eq_sch_10_danger",
+          "phase": "before",
+          "learner_action": "identify_classroom_hazards",
+          "active_simulation_instruction": "Find the three configured classroom danger spots — the windows, the shelf, and the hanging light.",
+          "practice_steps": [
+            "Look straight at each of the three configured danger spots for one second."
+          ],
+          "protocol_ids": ["EQ-BEF-001", "EQ-BEF-003"],
+          "mapping_status": "scenario_bound",
+          "required_trusted_flags": {"hazard_active": false, "unsafe_object_visible": true},
+          "scope_constraint": "The danger spots are configured VR training markers; do not generalize this task into real-world structural inspection."
         },
         {
           "task_id": "eq_sch_3_cover",
@@ -224,6 +434,15 @@
           "protocol_ids": ["EQ-AFT-008"],
           "mapping_status": "ready",
           "required_trusted_flags": {"hazard_active": false, "at_assembly_area": true, "headcount_active": true}
+        },
+        {
+          "task_id": "eq_sch_11_headcount",
+          "phase": "after",
+          "learner_action": "stay_for_headcount_and_report_injury",
+          "active_simulation_instruction": "Stay with your class in the configured assembly circle for the head count, and tell a grown-up if you or anyone nearby is hurt.",
+          "protocol_ids": ["EQ-AFT-008", "EQ-AFT-005", "EQ-AFT-001"],
+          "mapping_status": "ready",
+          "required_trusted_flags": {"hazard_active": false, "at_assembly_area": true, "headcount_active": true}
         }
       ]
     },
@@ -235,7 +454,7 @@
       "setting": "outdoor",
       "location_type": "outdoor",
       "default_location_zone": "STREET_START",
-      "implemented_task_count": 5,
+      "implemented_task_count": 6,
       "tasks": [
         {
           "task_id": "eq_out_1_choice",
@@ -280,6 +499,15 @@
           "active_simulation_instruction": "Follow the configured arrows around simulated debris to the evacuation-center flag.",
           "protocol_ids": ["EQ-AFT-003"],
           "mapping_status": "local_review",
+          "required_trusted_flags": {"hazard_active": false, "aftershock_active": false}
+        },
+        {
+          "task_id": "eq_out_6_stayput",
+          "phase": "after",
+          "learner_action": "wait_at_evacuation_center",
+          "active_simulation_instruction": "Stay in the configured evacuation-center circle and wait there for a grown-up.",
+          "protocol_ids": ["EQ-AFT-003", "EQ-AFT-004"],
+          "mapping_status": "ready",
           "required_trusted_flags": {"hazard_active": false, "aftershock_active": false}
         }
       ]

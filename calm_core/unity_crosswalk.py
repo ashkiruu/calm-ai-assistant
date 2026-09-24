@@ -30,7 +30,7 @@ BLOCKED_LIFECYCLE_STATES = {
 # backend assistant. Reconcile the one Tutorial task that actually calls CALM
 # without claiming every tutorial TEACH/TRY beat is a backend task.
 UNITY_TASK_PATTERN = re.compile(
-    r'\bId\s*=\s*"((?:(?:eq|fire|typ)_(?:home|sch|out)_\d+_[A-Za-z0-9_]+|tut_13_ask))"'
+    r'\bId\s*=\s*"((?:eq_home_[bda]\d+_[A-Za-z0-9_]+|(?:eq|fire|typ)_(?:home|sch|out)_\d+_[A-Za-z0-9_]+|tut_13_ask))"'
 )
 
 # Task-id drift between this repo and the Unity project. These two prefixes are
@@ -206,8 +206,13 @@ def validate_crosswalk(
 
             phase = task.get("phase")
             status = task.get("mapping_status")
+            # A Home mission can leave the house. The park/garden tasks use
+            # outdoor protocol cards while earlier tasks remain home-scoped.
+            task_setting = task.get("setting", setting)
             if phase not in PHASES:
                 errors.append(f"{label}: invalid phase {phase!r}")
+            if task_setting not in SETTINGS:
+                errors.append(f"{label}: invalid setting {task_setting!r}")
             if status not in allowed_statuses:
                 errors.append(f"{label}: invalid mapping_status {status!r}")
             else:
@@ -231,8 +236,12 @@ def validate_crosswalk(
                 errors.append(f"{label}: practice_steps must contain non-empty strings")
 
             primary_ids = task.get("protocol_ids")
-            if not isinstance(primary_ids, list) or not primary_ids:
-                errors.append(f"{label}: protocol_ids must be a non-empty list")
+            # A storyboard-declared evidence gap cannot name a card that does
+            # not exist. It remains explicit and needs a scope_constraint.
+            if not isinstance(primary_ids, list) or (
+                not primary_ids and status != "evidence_gap"
+            ):
+                errors.append(f"{label}: protocol_ids must be a non-empty list unless evidence_gap")
                 primary_ids = []
             referenced_ids = primary_ids + task.get("deviation_protocol_ids", [])
             for protocol_id in referenced_ids:
@@ -244,8 +253,8 @@ def validate_crosswalk(
                 classification = card.get("classification", {})
                 if classification.get("hazard") != hazard and not general_qa:
                     errors.append(f"{label}: {protocol_id} has the wrong hazard")
-                if setting not in classification.get("settings", []) and not general_qa:
-                    errors.append(f"{label}: {protocol_id} does not apply to {setting}")
+                if task_setting not in classification.get("settings", []) and not general_qa:
+                    errors.append(f"{label}: {protocol_id} does not apply to {task_setting}")
                 if (
                     classification.get("phase") != phase
                     and not task.get("allow_cross_phase_grounding", False)
@@ -262,11 +271,17 @@ def validate_crosswalk(
 
     live_unity_path = unity_library_path
     if live_unity_path is None:
-        configured_path = _configured_unity_path(data)
-        if configured_path and configured_path.exists():
-            live_unity_path = configured_path
-        elif configured_path:
-            warnings.append(f"Unity mission library not found: {configured_path}")
+        # During an isolated Unity worktree build, validate against that branch
+        # without rewriting the configured live project_root in the crosswalk.
+        override = os.environ.get("CALM_UNITY_LIBRARY_OVERRIDE")
+        if override:
+            live_unity_path = Path(override)
+        else:
+            configured_path = _configured_unity_path(data)
+            if configured_path and configured_path.exists():
+                live_unity_path = configured_path
+            elif configured_path:
+                warnings.append(f"Unity mission library not found: {configured_path}")
 
     if live_unity_path is not None:
         try:
