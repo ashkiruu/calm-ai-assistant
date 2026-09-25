@@ -135,7 +135,7 @@ class SpokenQuestionEndToEndTests(unittest.TestCase):
                 return await client.post(
                     "/api/v1/voice-chat",
                     files={"audio_file": ("q.wav", b"RIFFfake", "audio/wav")},
-                    data={"task_id": "eq_home_6_dch", "locale": "auto"},
+                    data={"task_id": "eq_home_d1_dch", "locale": "auto"},
                 )
 
         with patch.object(server, "_transcribe_upload", return_value=transcription):

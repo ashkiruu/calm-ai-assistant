@@ -171,7 +171,7 @@ def run_model(
             make_client(provider, model, load_timeout), crosswalk
         )
         try:
-            warmup.answer(question="What should I do now?", task_id="eq_home_6_dch")
+            warmup.answer(question="What should I do now?", task_id="eq_home_d1_dch")
         except LLMUnavailable as error:
             return {"model": spec, "provider": provider,
                     "error": f"failed to load: {error}"}

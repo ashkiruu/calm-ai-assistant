@@ -24,7 +24,7 @@ class ApiBoundaryTests(unittest.TestCase):
 
     def test_voice_metadata_is_trimmed_consistently_with_json_chat(self):
         result = server._validate_voice_chat_metadata(
-            task_id="  eq_home_6_dch  ",
+            task_id="  eq_home_d1_dch  ",
             session_id="  session-1  ",
             previous_question="  What now?  ",
             previous_response="  Stay under cover.  ",
@@ -32,7 +32,7 @@ class ApiBoundaryTests(unittest.TestCase):
         self.assertEqual(
             result,
             (
-                "eq_home_6_dch",
+                "eq_home_d1_dch",
                 "session-1",
                 "What now?",
                 "Stay under cover.",
@@ -206,25 +206,25 @@ class ChatErrorPathTests(unittest.TestCase):
             with self.assertRaises(KeyError):
                 self.post_chat(
                     question="What should I do?",
-                    task_id="eq_home_6_dch",
+                    task_id="eq_home_d1_dch",
                     locale="en-PH",
                 )
 
     def test_an_empty_question_is_rejected_by_the_schema(self):
-        response = self.post_chat(question="", task_id="eq_home_6_dch", locale="en-PH")
+        response = self.post_chat(question="", task_id="eq_home_d1_dch", locale="en-PH")
 
         self.assertEqual(response.status_code, 422)
 
     def test_an_over_long_question_is_rejected(self):
         response = self.post_chat(
-            question="x" * 501, task_id="eq_home_6_dch", locale="en-PH"
+            question="x" * 501, task_id="eq_home_d1_dch", locale="en-PH"
         )
 
         self.assertEqual(response.status_code, 422)
 
     def test_an_unsupported_locale_is_rejected(self):
         response = self.post_chat(
-            question="What should I do?", task_id="eq_home_6_dch", locale="es-ES"
+            question="What should I do?", task_id="eq_home_d1_dch", locale="es-ES"
         )
 
         self.assertEqual(response.status_code, 422)
@@ -234,7 +234,7 @@ class ChatErrorPathTests(unittest.TestCase):
 
         response = self.post_chat(
             question="Ano ang dapat kong gawin?",
-            task_id="eq_home_6_dch",
+            task_id="eq_home_d1_dch",
             locale="auto",
         )
 

@@ -13,8 +13,23 @@ class UnityScenarioCrosswalkTests(unittest.TestCase):
         cls.crosswalk = UnityScenarioCrosswalk()
 
     def test_loads_all_implemented_unity_tasks(self) -> None:
-        self.assertEqual(self.crosswalk.mission_count, 12)
-        self.assertEqual(self.crosswalk.task_count, 90)
+        self.assertEqual(self.crosswalk.mission_count, 9)
+        self.assertEqual(self.crosswalk.task_count, 64)
+
+    def test_live_home_scenes_have_only_v2_mappings(self) -> None:
+        missions = {mission["scene"]: mission for mission in self.crosswalk.data["missions"]}
+        expected = {
+            "Earthquake_Home": ("unity-earthquake-home-v2", 11),
+            "Fire_Home": ("unity-fire-home-v2", 9),
+            "Typhoon_Home": ("unity-typhoon-home-v2", 10),
+        }
+        for scene, (scenario_id, task_count) in expected.items():
+            with self.subTest(scene=scene):
+                self.assertEqual(missions[scene]["scenario_id"], scenario_id)
+                self.assertEqual(len(missions[scene]["tasks"]), task_count)
+                self.assertNotIn(scene + "_V5", missions)
+        for retired_id in ("eq_home_6_dch", "fire_home_5_exit", "typ_home_5_center"):
+            self.assertIsNone(self.crosswalk.get_task(retired_id))
 
     def test_covers_all_three_hazards(self) -> None:
         hazards = {
@@ -35,10 +50,10 @@ class UnityScenarioCrosswalkTests(unittest.TestCase):
         self.assertTrue(all(task.get("scope_constraint") for task in constrained))
 
     def test_retrieval_plan_separates_instruction_from_corpus_evidence(self) -> None:
-        plan = self.crosswalk.retrieval_plan("eq_home_6_dch")
+        plan = self.crosswalk.retrieval_plan("eq_home_d1_dch")
 
         self.assertIn(
-            "drop, cover, and hold",
+            "hold a table leg",
             plan["active_simulation_instruction"].lower(),
         )
         self.assertEqual(
@@ -46,14 +61,14 @@ class UnityScenarioCrosswalkTests(unittest.TestCase):
                 card["protocol_id"]
                 for card in plan["retrieved_safety_evidence"]
             ],
-            ["EQ-DUR-001"],
+            ["EQ-DUR-001", "EQ-DUR-002", "EQ-DUR-003"],
         )
         self.assertEqual(
             [
                 card["protocol_id"]
                 for card in plan["deviation_safety_evidence"]
             ],
-            ["EQ-DUR-003"],
+            [],
         )
         self.assertEqual(
             plan["retrieval_filters"],
@@ -75,7 +90,7 @@ class UnityScenarioCrosswalkTests(unittest.TestCase):
 
     def test_v2_home_go_bag_keeps_its_evidence_gap_explicit(self) -> None:
         task = self.crosswalk.get_task("eq_home_a2_gobag")
-        self.assertEqual(task["scene"], "Earthquake_Home_V5")
+        self.assertEqual(task["scene"], "Earthquake_Home")
         self.assertEqual(task["mapping_status"], "evidence_gap")
         self.assertEqual(task["protocol_ids"], [])
         self.assertTrue(task["scope_constraint"])
@@ -90,7 +105,7 @@ class UnityScenarioCrosswalkTests(unittest.TestCase):
 
     def test_v2_fire_home_rest_keeps_its_evidence_gap_explicit(self) -> None:
         task = self.crosswalk.get_task("fire_home_b4_rest")
-        self.assertEqual(task["scene"], "Fire_Home_V5")
+        self.assertEqual(task["scene"], "Fire_Home")
         self.assertEqual(task["mapping_status"], "evidence_gap")
         self.assertEqual(task["protocol_ids"], [])
         self.assertTrue(task["scope_constraint"])
@@ -101,10 +116,11 @@ class UnityScenarioCrosswalkTests(unittest.TestCase):
         self.assertEqual(task["protocol_ids"], ["FIR-DUR-001"])
         self.assertTrue(task["allow_cross_phase_grounding"])
 
-    def test_v2_typhoon_home_keeps_v1_and_scopes_conflicting_cards(self) -> None:
+    def test_v2_typhoon_home_scopes_conflicting_cards(self) -> None:
         missions = {mission["scene"]: mission for mission in self.crosswalk.data["missions"]}
-        self.assertEqual(len(missions["Typhoon_Home"]["tasks"]), 9)
-        v2 = missions["Typhoon_Home_V5"]["tasks"]
+        self.assertEqual(missions["Typhoon_Home"]["scenario_id"], "unity-typhoon-home-v2")
+        self.assertNotIn("Typhoon_Home_V5", missions)
+        v2 = missions["Typhoon_Home"]["tasks"]
         self.assertEqual(
             [task["task_id"] for task in v2],
             [
@@ -128,7 +144,7 @@ class UnityScenarioCrosswalkTests(unittest.TestCase):
         report = validate_crosswalk()
 
         self.assertEqual(report["status"], "PASS", report["errors"])
-        self.assertEqual(report["task_count"], 90)
+        self.assertEqual(report["task_count"], 64)
 
 
 class UnityReconciliationTests(unittest.TestCase):
