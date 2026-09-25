@@ -142,12 +142,15 @@ class RAGChatTests(unittest.TestCase):
 
         self.assertFalse(result["llm_used"])
         self.assertEqual(result["answer_source"], "deterministic_fallback")
+        # The whole reviewed wording (short command + instruction): several
+        # cards carry their key action only in the short command.
         self.assertEqual(
             result["response_text"],
             service.repository.get(result["retrieved_evidence_ids"][0])[
                 "language_pack"
-            ]["en-PH"]["instruction"],
+            ]["en-PH"]["tts_text"],
         )
+        self.assertTrue(result["retrieved_evidence_ids"][0].startswith("FIR-DUR-"))
         self.assertNotEqual(
             result["response_text"], result["active_simulation_instruction"]
         )
@@ -574,7 +577,10 @@ class QuestionScopeGatingTests(unittest.TestCase):
         self.assertTrue(result["llm_used"])
         self.assertEqual(result["completion_code"], "OK")
 
-    def test_in_hazard_off_task_in_a_calm_phase_adds_phase_evidence(self) -> None:
+    def test_in_hazard_off_task_in_a_calm_phase_answers_from_the_asked_phase(self) -> None:
+        """Only the asked stage's cards: the task's own card used to lead the
+        evidence and anchor the answer to the wrong stage."""
+
         result = self.service.answer(
             question="What do I do after the shaking stops?",
             task_id="eq_home_b1_spot",
@@ -582,20 +588,40 @@ class QuestionScopeGatingTests(unittest.TestCase):
 
         self.assertEqual(result["question_scope"], "in_hazard_off_task")
         self.assertEqual(result["completion_code"], "OK_IN_HAZARD_OFF_TASK")
-        self.assertEqual(result["evidence_scope"], "task_plus_phase_evidence")
-        self.assertGreater(len(result["retrieved_evidence_ids"]), 1)
+        self.assertEqual(result["evidence_scope"], "asked_phase_evidence")
+        self.assertTrue(result["retrieved_evidence_ids"])
+        self.assertTrue(
+            all(item.startswith("EQ-AFT-") for item in result["retrieved_evidence_ids"])
+        )
 
-    def test_in_hazard_off_task_during_live_task_is_flagged_deferred(self) -> None:
-        """The stage question is answered, but from the live task's evidence."""
+    def test_in_hazard_off_task_answers_the_asked_phase_without_word_overlap(self) -> None:
+        """Hazard and stage are both known, so no card needs to share a word."""
+
+        result = self.service.answer(
+            question="What happens during the earthquake?",
+            task_id="eq_home_b1_spot",
+        )
+
+        self.assertEqual(result["evidence_scope"], "asked_phase_evidence")
+        self.assertTrue(
+            all(item.startswith("EQ-DUR-") for item in result["retrieved_evidence_ids"])
+        )
+
+    def test_in_hazard_off_task_during_live_task_defers_without_calling_model(self) -> None:
+        """Same shape as the cross-hazard deferral: the live cue, then a promise."""
 
         result = self.service.answer(
             question="What do I do after the shaking stops?",
             task_id="eq_home_d1_dch",
         )
 
+        self.assertEqual(self.provider.calls, [])
+        self.assertFalse(result["llm_used"])
         self.assertTrue(result["deferred_question"])
+        self.assertEqual(result["completion_code"], "DEFERRED_DURING_CRITICAL_TASK")
         self.assertEqual(result["evidence_scope"], "task_evidence")
         self.assertEqual(result["retrieved_evidence_ids"], ["EQ-DUR-001", "EQ-DUR-002", "EQ-DUR-003"])
+        self.assertIn("We will learn about that later", result["response_text"])
 
     def test_scope_is_declared_to_the_model(self) -> None:
         self.service.answer(
@@ -1183,7 +1209,7 @@ class ResponseContractTests(unittest.TestCase):
         # service, and the schema must enumerate exactly the same set.
         service_scopes = {
             rag_chat_module.EVIDENCE_TASK,
-            rag_chat_module.EVIDENCE_TASK_PLUS_PHASE,
+            rag_chat_module.EVIDENCE_ASKED_PHASE,
             rag_chat_module.EVIDENCE_ASKED_HAZARD,
             rag_chat_module.EVIDENCE_GENERAL,
             rag_chat_module.EVIDENCE_NONE,

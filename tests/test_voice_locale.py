@@ -34,19 +34,55 @@ def heard(text: str, language: str, probability: float = 0.99) -> Transcription:
 class TranscriptionLanguageTests(unittest.TestCase):
     """`_transcribe` must never quietly pick a language."""
 
-    def test_auto_does_not_force_english(self) -> None:
-        """The exact bug. `auto` must reach Whisper as "detect it yourself"."""
+    def _auto(self, scores: list[tuple[str, float]]):
+        with patch.object(server, "_get_stt_engine") as engine, patch(
+            "faster_whisper.decode_audio", return_value="decoded-audio"
+        ):
+            engine.return_value.detect_language.return_value = (
+                scores[0][0],
+                scores[0][1],
+                scores,
+            )
+            engine.return_value.transcribe.return_value = ([], _Info("zz", 0.1))
+            result = server._transcribe(server.Path("x.wav"), server.AUTO_LOCALE)
+        return engine, result
 
-        with patch.object(server, "_get_stt_engine") as engine:
-            engine.return_value.transcribe.return_value = ([], _Info("tl", 0.97))
-            server._transcribe(server.Path("x.wav"), server.AUTO_LOCALE)
+    def test_auto_does_not_force_english(self) -> None:
+        """The exact bug. `auto` must detect -- here Tagalog wins, so Tagalog."""
+
+        engine, result = self._auto([("tl", 0.7), ("en", 0.2), ("ms", 0.1)])
 
         _, kwargs = engine.return_value.transcribe.call_args
-        self.assertIsNone(kwargs["language"], "auto must not pin a language")
-        self.assertIsNone(
-            kwargs["initial_prompt"],
-            "the domain prompt is written in one language and would bias detection",
-        )
+        self.assertEqual(kwargs["language"], "tl")
+        self.assertEqual(result.language, "tl")
+
+    def test_auto_chooses_only_between_english_and_tagalog(self) -> None:
+        """Unrestricted detection picked Malay for accented English and then
+        transcribed the question INTO Malay ("Apa yang berlaku?")."""
+
+        engine, result = self._auto([("ms", 0.6), ("en", 0.3), ("tl", 0.1)])
+
+        _, kwargs = engine.return_value.transcribe.call_args
+        self.assertEqual(kwargs["language"], "en")
+        self.assertIsNotNone(kwargs["initial_prompt"])
+        self.assertEqual(result.language, "en")
+        self.assertAlmostEqual(result.language_probability, 0.3)
+
+    def test_auto_survives_audio_with_no_speech(self) -> None:
+        """faster-whisper 1.1.0's VAD path raises on silence; score raw audio."""
+
+        with patch.object(server, "_get_stt_engine") as engine, patch(
+            "faster_whisper.decode_audio", return_value="decoded-audio"
+        ):
+            engine.return_value.detect_language.side_effect = [
+                ValueError("need at least one array to concatenate"),
+                ("en", 0.5, [("en", 0.5), ("tl", 0.2)]),
+            ]
+            engine.return_value.transcribe.return_value = ([], _Info())
+            result = server._transcribe(server.Path("x.wav"), server.AUTO_LOCALE)
+
+        self.assertEqual(result.language, "en")
+        self.assertEqual(result.text, "")
 
     def test_an_explicit_locale_still_pins_its_language(self) -> None:
         """The non-auto path is unchanged; forcing is right when we were told."""
@@ -112,6 +148,16 @@ class ResolveSpokenLocaleTests(unittest.TestCase):
 
         self.assertEqual(resolve_spoken_locale(heard("Help", "tl")), "fil-PH")
 
+    def test_english_sentence_heard_as_tagalog_is_answered_in_english(self) -> None:
+        """Measured: accented English detected as `tl` at 0.55-0.80, transcribed
+        correctly word for word, and then answered wholly in Filipino."""
+
+        for text in ("How long do I stay here?", "What do I do next?"):
+            with self.subTest(text=text):
+                self.assertEqual(
+                    resolve_spoken_locale(heard(text, "tl", 0.6)), "en-PH"
+                )
+
     def test_every_tagalog_code_whisper_might_emit_is_recognised(self) -> None:
         for code in ("tl", "fil", "tgl"):
             with self.subTest(code=code):
@@ -164,6 +210,30 @@ class SpokenQuestionEndToEndTests(unittest.TestCase):
 
         self.assertTrue(recorded, "the voice turn should be logged")
         self.assertEqual(recorded[-1]["transcribed_language"], "tl")
+
+    def test_the_heard_language_survives_the_log_allowlist(self) -> None:
+        """The test above stubs `record`, so it never saw the sink's allowlist
+        drop this field -- which it did, silently, until 2026-09-24."""
+
+        import tempfile
+
+        from calm_core.session_log import SessionLog
+
+        with tempfile.TemporaryDirectory() as directory:
+            sink = SessionLog(server.Path(directory) / "sessions.jsonl")
+            sink.record(
+                {
+                    "endpoint": "/api/v1/voice-chat",
+                    "transcribed_language": "tl",
+                    "question": "Ano ang dapat kong gawin?",
+                }
+            )
+            written = (server.Path(directory) / "sessions.jsonl").read_text(
+                encoding="utf-8"
+            )
+
+        self.assertIn('"transcribed_language": "tl"', written.replace('":"', '": "'))
+        self.assertNotIn("Ano ang dapat", written)
 
 
 class _Info:

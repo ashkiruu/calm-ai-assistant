@@ -19,6 +19,8 @@ from .question_scope import (
     SCOPE_IN_HAZARD_OFF_TASK,
     SCOPE_ON_TASK,
     SCOPE_OUT_OF_SCOPE,
+    HAZARD_TERMS,
+    PHASE_TERMS,
     QuestionScope,
     classify,
     detect_locale,
@@ -28,7 +30,7 @@ from .repository import ProtocolRepository, content_tokens
 from .unity_crosswalk import UnityScenarioCrosswalk
 
 
-PROMPT_POLICY_VERSION = "calm-rag-v4-learner-agency"
+PROMPT_POLICY_VERSION = "calm-rag-v5-phase-coherent"
 #: Request-only locale: answer in whichever language the question used.
 AUTO_LOCALE = "auto"
 #: A teaching answer needs enough room to explain *how* and *why*, not merely
@@ -168,7 +170,7 @@ def _mirror_language_rule(locale: str) -> str:
 def _language_anchor(cards: list[dict[str, Any]], locale: str) -> str:
     if locale == "en-PH" or not cards:
         return ""
-    reviewed = cards[0]["language_pack"][locale]["instruction"]
+    reviewed = _reviewed_text(cards[0], locale)
     return (
         "\n\nThis is the reviewed sentence for this exact task, already in the "
         "learner's language:\n"
@@ -176,6 +178,20 @@ def _language_anchor(cards: list[dict[str, Any]], locale: str) -> str:
         "Your answer must stay this close to it in vocabulary and rhythm. Keep "
         "its words. Reshape it only as far as the question requires."
     )
+
+def _reviewed_text(card: dict[str, Any], locale: str) -> str:
+    """The card's whole reviewed wording: short command plus instruction.
+
+    Several cards put their key action only in the short command and use the
+    instruction for the follow-on detail.  FIR-DUR-004's instruction never says
+    "get low" -- that is in its short command -- so anchoring or falling back to
+    the instruction alone dropped the very action the task teaches.  `tts_text`
+    is already built as short + instruction by build_protocol_cards.py.
+    """
+
+    localized = card["language_pack"][locale]
+    return localized.get("tts_text") or localized["instruction"]
+
 
 def _decision_trace(
     scope: QuestionScope, completion_code: str, answer_source: str
@@ -218,10 +234,56 @@ GENERAL_OVERVIEW_IDS = {
 }
 
 EVIDENCE_TASK = "task_evidence"
-EVIDENCE_TASK_PLUS_PHASE = "task_plus_phase_evidence"
+EVIDENCE_ASKED_PHASE = "asked_phase_evidence"
 EVIDENCE_ASKED_HAZARD = "asked_hazard_evidence"
 EVIDENCE_GENERAL = "general_evidence"
 EVIDENCE_NONE = "none"
+
+#: When a question names a hazard but no stage ("What should I do in a
+#: fire?"), the learner means while it is happening.
+DEFAULT_NAMED_HAZARD_PHASE = "during"
+#: Tie-break order for a question that names neither a hazard nor a stage.
+#: The winning card's phase then becomes the only phase in the answer.
+GENERAL_PHASE_PREFERENCE = ("during", "before", "after")
+
+
+def _answer_phase(scope: QuestionScope) -> str | None:
+    """The single lesson phase an off-task or general answer may draw from.
+
+    Evidence from two phases in one prompt is how "crawl under the smoke" and
+    "once outside, stay outside" got blended into one instruction.  The stage
+    the learner named wins; a named hazard without a stage means during;
+    otherwise None, and the caller locks to the best-matching card's phase.
+    """
+
+    if scope.asked_phase:
+        return scope.asked_phase
+    if scope.asked_hazard:
+        return DEFAULT_NAMED_HAZARD_PHASE
+    return None
+
+
+def _filter_terms(hazard: str | None, phase: str | None) -> set[str]:
+    """Question words already spent on filtering the candidate pool.
+
+    Inside a fire/during pool, "fire" and "during" only reward cards that happen
+    to repeat them -- "What should I do during a fire?" ranked "use the stairs,
+    not the elevator" first because its objective says "during a fire".
+    """
+
+    return set(HAZARD_TERMS.get(hazard or "", ())) | set(PHASE_TERMS.get(phase or "", ()))
+
+
+def _single_phase(
+    scored: list[tuple[int, dict[str, Any]]]
+) -> list[tuple[int, dict[str, Any]]]:
+    """Keep only cards in the same phase as the top-ranked one."""
+
+    if not scored:
+        return scored
+    phase = scored[0][1]["classification"]["phase"]
+    return [item for item in scored if item[1]["classification"]["phase"] == phase]
+
 
 SOURCE_LLM = "llm"
 SOURCE_DETERMINISTIC = "deterministic_fallback"
@@ -429,6 +491,7 @@ class RAGChatService:
             # from evidence_cards, not from this payload, so the audit trail is
             # untouched.
             "title": card["title"],
+            "stage": card["classification"]["phase"],
             "objective": semantics["objective"],
             "ordered_actions": semantics["ordered_actions"],
             "prohibited_actions": semantics["prohibited_actions"],
@@ -459,10 +522,8 @@ class RAGChatService:
             return plan["active_simulation_instruction"]
 
         for card in evidence_cards:
-            localized = card.get("language_pack", {}).get(locale, {})
-            instruction = localized.get("instruction")
-            if instruction:
-                return instruction
+            if card.get("language_pack", {}).get(locale):
+                return _reviewed_text(card, locale)
 
         # No reviewed card text for this locale: the reviewed deterministic
         # fallback is still in the right language, which the English crosswalk
@@ -555,6 +616,7 @@ class RAGChatService:
         phase: str | None,
         locale: str,
         exclude_ids: set[str],
+        setting: str | None = None,
         require_overlap: bool = True,
     ) -> list[dict[str, Any]]:
         """Search curated cards the active task does not already supply.
@@ -566,16 +628,31 @@ class RAGChatService:
         carries no further discriminating signal within the filtered set.  The
         cards never name their own hazard in Filipino, so demanding overlap
         there refuses questions the corpus can genuinely answer.
+
+        `setting` narrows to the learner's own location when any card covers it
+        and is dropped otherwise, so a home learner gets home cards.  With no
+        `phase`, the result is locked to the top-ranked card's phase.
         """
 
-        candidates = [
-            card
-            for card in self.repository.candidates(hazard=hazard, phase=phase)
-            if card["protocol_id"] not in exclude_ids
-        ]
+        def pool(setting_filter: str | None) -> list[dict[str, Any]]:
+            return [
+                card
+                for card in self.repository.candidates(
+                    hazard=hazard, phase=phase, setting=setting_filter
+                )
+                if card["protocol_id"] not in exclude_ids
+            ]
+
+        candidates = pool(setting) or pool(None)
         scored = self.repository.rank_educational_scored(
-            candidates, question, locale
+            candidates,
+            question,
+            locale,
+            GENERAL_PHASE_PREFERENCE,
+            ignore_terms=_filter_terms(hazard, phase),
         )
+        if phase is None:
+            scored = _single_phase(scored)
         relevant = [
             card for overlap, card in scored if overlap >= MIN_EVIDENCE_OVERLAP
         ]
@@ -600,13 +677,23 @@ class RAGChatService:
         gate already recognizes as disaster-related.
         """
 
+        phase = _answer_phase(scope)
         candidates = self.repository.candidates(
             hazard=scope.asked_hazard,
-            phase=scope.asked_phase,
+            phase=phase,
         )
         scored = self.repository.rank_educational_scored(
-            candidates, question, locale
+            candidates,
+            question,
+            locale,
+            GENERAL_PHASE_PREFERENCE,
+            ignore_terms=_filter_terms(scope.asked_hazard, phase),
         )
+        if phase is None:
+            # No stage and no hazard named: answer from the stage of the
+            # best-matching card only, never a top four drawn across all three.
+            matched = [item for item in scored if item[0] >= MIN_EVIDENCE_OVERLAP]
+            scored = _single_phase(matched) or scored
         relevant = [
             card for overlap, card in scored if overlap >= MIN_EVIDENCE_OVERLAP
         ]
@@ -619,7 +706,7 @@ class RAGChatService:
             relevant = [card for _, card in scored]
 
         if not relevant and not scope.asked_hazard and question_in_scope(question):
-            overview_ids = GENERAL_OVERVIEW_IDS[scope.asked_phase]
+            overview_ids = GENERAL_OVERVIEW_IDS[phase]
             by_id = {card["protocol_id"]: card for card in self.repository.cards}
             relevant = [by_id[item] for item in overview_ids if item in by_id]
 
@@ -682,6 +769,23 @@ class RAGChatService:
         else:
             off_task_rule = ""
 
+        # The five crosswalk tasks with allow_cross_phase_grounding carry a card
+        # from another stage (e.g. "do not fight the fire" on a pre-fire stove
+        # task).  It is there as a boundary; the model must not read it as the
+        # step to perform now.
+        if general_qa or scope.scope in {SCOPE_CROSS_HAZARD, SCOPE_IN_HAZARD_OFF_TASK}:
+            answer_stage = _answer_phase(scope) or evidence_cards[0]["classification"]["phase"]
+        else:
+            answer_stage = plan["retrieval_filters"]["phase"]
+        if any(
+            card["classification"]["phase"] != answer_stage for card in evidence_cards
+        ):
+            off_task_rule += (
+                "\n- Each evidence item has a stage. The answer is about the "
+                f"'{answer_stage}' stage; treat evidence from any other stage only "
+                "as a boundary to respect, never as a step to do now."
+            )
+
         # The mirroring rule leads in both non-English branches. It is the one
         # language instruction that applies no matter which evidence shape is in
         # play, and the practice-bound branch previously had no statement about
@@ -735,7 +839,7 @@ class RAGChatService:
                     f' Lead with the current task action: "{active_instruction}"'
                 )
             else:
-                reviewed = evidence_cards[0]["language_pack"][locale]["instruction"]
+                reviewed = _reviewed_text(evidence_cards[0], locale)
                 turn_rule += (
                     f' Base the command closely on this reviewed wording: "{reviewed}"'
                 )
@@ -820,6 +924,7 @@ Answer rules, in priority order:
                     "protocol_id": card["protocol_id"],
                     "title": card["title"],
                     "evidence_role": "real_world_guardrail_for_configured_practice",
+                    "stage": card["classification"]["phase"],
                     "simulation_action": active_instruction,
                     "practice_boundary": plan["scope_constraint"],
                     "prohibited_actions": card["approved_semantics"][
@@ -1042,6 +1147,28 @@ Answer rules, in priority order:
                 session_id=session_id,
             )
 
+        def defer_live_task() -> dict[str, Any]:
+            # Evidence-gap tasks have a trusted Unity instruction but no
+            # protocol card. Keep their cue contextual and report no evidence.
+            instruction = (
+                task_cards[0]["language_pack"][locale]["instruction"]
+                if task_cards
+                else self._trusted_replacement(
+                    locale=locale,
+                    response_goal="direct_answer",
+                    practice_steps=[],
+                    plan=plan,
+                    evidence_cards=[],
+                )
+            )
+            return deterministic(
+                f"{instruction} {FALLBACKS[locale]['defer_cross_hazard']}",
+                "DEFERRED_DURING_CRITICAL_TASK",
+                EVIDENCE_TASK if task_cards else EVIDENCE_NONE,
+                task_cards,
+                deferred=True,
+            )
+
         # A question about nothing in the curated corpus is answered by the
         # reviewed redirect, never by the model.  A question that names the
         # active task's own props still belongs to that task even when it
@@ -1075,40 +1202,45 @@ Answer rules, in priority order:
             if critical:
                 # The hazard is live.  Deliver the reviewed cue for the step the
                 # learner is standing in and promise the other hazard later.
-                instruction = task_cards[0]["language_pack"][locale]["instruction"]
-                defer_line = FALLBACKS[locale]["defer_cross_hazard"]
-                return deterministic(
-                    f"{instruction} {defer_line}",
-                    "DEFERRED_DURING_CRITICAL_TASK",
-                    EVIDENCE_TASK,
-                    task_cards,
-                    deferred=True,
-                )
+                return defer_live_task()
             evidence_cards = self._off_task_evidence(
                 question=cleaned_question,
                 hazard=scope.asked_hazard,
-                phase=scope.asked_phase,
+                phase=_answer_phase(scope),
                 locale=locale,
                 exclude_ids=set(),
+                setting=filters["setting"],
                 require_overlap=False,
             )
             evidence_scope = EVIDENCE_ASKED_HAZARD
             completion_code = "OK_CROSS_HAZARD"
         elif scope.scope == SCOPE_IN_HAZARD_OFF_TASK:
             if critical:
-                deferred = True
-            else:
-                supplemental = self._off_task_evidence(
-                    question=cleaned_question,
-                    hazard=filters["hazard"],
-                    phase=scope.asked_phase,
-                    locale=locale,
-                    exclude_ids={card["protocol_id"] for card in task_cards},
-                )
-                if supplemental:
-                    evidence_cards = task_cards + supplemental
-                    evidence_scope = EVIDENCE_TASK_PLUS_PHASE
-                    completion_code = "OK_IN_HAZARD_OFF_TASK"
+                # Same shape as the cross-hazard deferral above.  This used to
+                # set deferred=True and then call the model anyway, with only
+                # the live task's evidence, to answer a question about another
+                # stage -- labelled OK.  The model had nothing for the stage it
+                # was asked about, so it improvised from the wrong one.
+                return defer_live_task()
+            # Only the stage that was asked about.  Leading with the task's own
+            # card pointed the language anchor and the "reviewed wording" rule at
+            # the wrong stage.  The active instruction still reaches the model
+            # through ACTIVE_SIMULATION_CONTEXT.  Hazard and stage are both known
+            # here, so word overlap is not required -- the same reasoning as the
+            # cross-hazard search.
+            asked_stage = self._off_task_evidence(
+                question=cleaned_question,
+                hazard=filters["hazard"],
+                phase=scope.asked_phase,
+                locale=locale,
+                exclude_ids=set(),
+                setting=filters["setting"],
+                require_overlap=False,
+            )
+            if asked_stage:
+                evidence_cards = asked_stage
+                evidence_scope = EVIDENCE_ASKED_PHASE
+                completion_code = "OK_IN_HAZARD_OFF_TASK"
 
         if not evidence_cards:
             return deterministic(
@@ -1150,10 +1282,12 @@ Answer rules, in priority order:
             )
             if tutorial_glossary:
                 fallback_text = tutorial_glossary
-            elif evidence_scope in {EVIDENCE_ASKED_HAZARD, EVIDENCE_GENERAL}:
-                fallback_text = evidence_cards[0]["language_pack"][locale][
-                    "instruction"
-                ]
+            elif evidence_scope in {
+                EVIDENCE_ASKED_HAZARD,
+                EVIDENCE_ASKED_PHASE,
+                EVIDENCE_GENERAL,
+            }:
+                fallback_text = _reviewed_text(evidence_cards[0], locale)
             else:
                 # Same language trap as the guardrail below: the crosswalk
                 # instruction is English only, so an outage during a Filipino

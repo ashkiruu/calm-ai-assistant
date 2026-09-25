@@ -6,7 +6,7 @@ import json
 import re
 import unicodedata
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any, Iterable, Sequence
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -15,12 +15,29 @@ DEFAULT_DEVELOPMENT_GATE = ROOT / "corpus" / "development_approval.json"
 
 PRODUCTION_STATE = "RUNTIME_APPROVED"
 SUPPORTED_MODES = {"development", "production"}
+#: Lesson order, not alphabetical order.  Sorting protocol ids as plain strings
+#: puts AFT before BEF before DUR, and every tie-break that fell back to the id
+#: therefore preferred after-phase cards on a generic question.
+PHASE_ORDER = ("before", "during", "after")
+
+
+def card_sort_key(card: dict[str, Any]) -> tuple[str, int, str]:
+    """Hazard, then lesson phase, then id: the order the card specs are authored in."""
+
+    classification = card["classification"]
+    phase = classification["phase"]
+    phase_index = PHASE_ORDER.index(phase) if phase in PHASE_ORDER else len(PHASE_ORDER)
+    return (classification["hazard"], phase_index, card["protocol_id"])
 
 _STOPWORDS = {
     "a", "about", "ako", "ang", "ano", "at", "ay", "ba", "do", "for",
     "how", "i", "in", "is", "it", "ko", "kung", "mga", "my", "ng", "on",
     "or", "sa", "should", "the", "to", "what", "when", "where", "why",
     "with", "you", "your",
+    # "an" was missing, so "What should I do in an earthquake?" matched cards
+    # that say "an unsafe area" / "an outdoor learner" and outranked Drop,
+    # Cover and Hold On, which shares no content word with the question.
+    "an", "are", "be", "can", "if", "of", "that", "there", "this",
 }
 
 
@@ -170,6 +187,8 @@ class ProtocolRepository:
         cards: Iterable[dict[str, Any]],
         question: str,
         locale: str | None = None,
+        phase_preference: Sequence[str] | None = None,
+        ignore_terms: Iterable[str] = (),
     ) -> list[tuple[int, dict[str, Any]]]:
         """Rank curated cards and expose the overlap score with each one.
 
@@ -179,10 +198,24 @@ class ProtocolRepository:
         result answers off-topic questions with the highest-priority card.
         Passing a locale also searches that locale's reviewed language pack.
         Raw PDF text is never searched.
+
+        Ties are broken by `phase_preference` (when given), then priority, then
+        `card_sort_key` -- never by the bare id, which ranked after-phase cards
+        first because "AFT" sorts before "BEF" and "DUR".
+
+        `ignore_terms` drops words that carry no signal inside an already
+        filtered pool: once candidates are restricted to fire/during, "fire" and
+        "during" in the question only reward cards that happen to repeat them.
         """
 
-        query_tokens = _tokens(question)
-        scored: list[tuple[int, int, str, dict[str, Any]]] = []
+        query_tokens = _tokens(question) - set(ignore_terms)
+        preference = list(phase_preference or ())
+
+        def phase_rank(card: dict[str, Any]) -> int:
+            phase = card["classification"]["phase"]
+            return preference.index(phase) if phase in preference else len(preference)
+
+        scored: list[tuple[int, int, int, tuple[str, int, str], dict[str, Any]]] = []
         for card in cards:
             parts = [
                 card["title"],
@@ -201,9 +234,11 @@ class ProtocolRepository:
             searchable = " ".join(parts)
             overlap = len(query_tokens & _tokens(searchable))
             priority = int(card["deterministic_safety"].get("priority", 0))
-            scored.append((overlap, priority, card["protocol_id"], card))
-        scored.sort(key=lambda item: (-item[0], -item[1], item[2]))
-        return [(item[0], item[3]) for item in scored]
+            scored.append(
+                (overlap, phase_rank(card), priority, card_sort_key(card), card)
+            )
+        scored.sort(key=lambda item: (-item[0], item[1], -item[2], item[3]))
+        return [(item[0], item[4]) for item in scored]
 
     def rank_educational(
         self,

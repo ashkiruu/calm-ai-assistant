@@ -108,6 +108,22 @@ class QuestionPhaseTests(unittest.TestCase):
     def test_ambiguous_phase_returns_none(self) -> None:
         self.assertIsNone(question_phase("What do I do before and after?"))
 
+    def test_start_and_stop_verbs_name_a_stage(self) -> None:
+        """'When the shaking stops' used to carry no stage at all, so a learner
+        asking about afterwards was answered from the step in front of them."""
+
+        self.assertEqual(question_phase("What do I do when the shaking stops?"), "after")
+        self.assertEqual(question_phase("What if the fire ends?"), "after")
+        self.assertEqual(question_phase("Is it the all clear yet?"), "after")
+        self.assertEqual(question_phase("What do I do if a fire starts?"), "during")
+        self.assertEqual(question_phase("What do I do while it is shaking?"), "during")
+
+    def test_stop_drop_and_roll_names_no_stage(self) -> None:
+        """The bare imperative 'stop' is a during-fire action, not 'after'."""
+
+        self.assertIsNone(question_phase("Stop, drop and roll?"))
+        self.assertIsNone(question_phase("When do I stop drop and roll?"))
+
     def test_no_phase_returns_none(self) -> None:
         self.assertIsNone(question_phase("Is the table sturdy?"))
 
@@ -147,6 +163,26 @@ class DetectLocaleTests(unittest.TestCase):
         """'What if may lindol?' is not a pure Filipino question."""
 
         self.assertEqual(detect_locale("What if may lindol?"), "taglish-PH")
+
+    def test_english_words_that_are_also_filipino_do_not_make_taglish(self) -> None:
+        """'at', 'may' and 'na' are everyday English.  Measured live: "May I go
+        outside now?" was read as Taglish and answered wholly in Filipino."""
+
+        for question in (
+            "What do I do at school?",
+            "What do I do at home?",
+            "May I go outside now?",
+            "Can I stay at my desk?",
+            "Look at the window",
+            "What happens at night?",
+        ):
+            with self.subTest(question=question):
+                self.assertEqual(detect_locale(question), "en-PH")
+
+    def test_ambiguous_words_still_count_when_backed_up(self) -> None:
+        self.assertEqual(detect_locale("At may lindol"), "fil-PH")  # no English
+        self.assertEqual(detect_locale("May fire ba?"), "fil-PH")  # "ba" is unambiguous
+        self.assertEqual(detect_locale("Where do I go ba?"), "taglish-PH")
 
     def test_empty_question_falls_back_to_the_default(self) -> None:
         self.assertEqual(detect_locale("", default="fil-PH"), "fil-PH")

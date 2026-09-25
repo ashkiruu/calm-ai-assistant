@@ -243,6 +243,20 @@ def validate_crosswalk(
             ):
                 errors.append(f"{label}: protocol_ids must be a non-empty list unless evidence_gap")
                 primary_ids = []
+            # The first card is the one the prompt's language anchor and the
+            # offline fallback read.  A permitted cross-phase card may support a
+            # task, but it must never lead one that has a card of its own phase.
+            if primary_ids and not general_qa:
+                phases = [
+                    cards[item].get("classification", {}).get("phase")
+                    for item in primary_ids
+                    if item in cards
+                ]
+                if phases and phase in phases and phases[0] != phase:
+                    errors.append(
+                        f"{label}: first protocol_id must be a {phase!r} card; "
+                        "a cross-phase card may only follow it"
+                    )
             referenced_ids = primary_ids + task.get("deviation_protocol_ids", [])
             for protocol_id in referenced_ids:
                 protocol_refs.add(protocol_id)
