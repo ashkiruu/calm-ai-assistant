@@ -918,6 +918,195 @@
       ]
     },
     {
+      "scene": "Typhoon_Home_V5",
+      "scenario_id": "unity-typhoon-home-v2",
+      "storyboard": "docs/storyboard/Typhoon_Home.md",
+      "hazard": "typhoon",
+      "setting": "home",
+      "location_type": "indoors",
+      "default_location_zone": "HOME_DINING",
+      "implemented_task_count": 10,
+      "tasks": [
+        {
+          "task_id": "typ_home_b1_news",
+          "phase": "before",
+          "learner_action": "watch_official_tv_typhoon_forecast",
+          "active_simulation_instruction": "Watch the scripted PAGASA TV forecast. Signal No. 3 means very strong winds; the typhoon also makes habagat rain heavier. Trust the official TV or radio news, not an unverified text.",
+          "protocol_ids": [
+            "TYP-BEF-001"
+          ],
+          "mapping_status": "local_review",
+          "required_trusted_flags": {
+            "responsible_adult_present": true,
+            "hazard_active": false,
+            "authenticated_evacuation_order": false
+          },
+          "location_zone": "HOME_DINING",
+          "scope_constraint": "Ground only in the scripted PAGASA TV forecast, not live weather. The learner uses the broadcast to decide; do not redirect the learner to a teacher, guardian, parent, or other adult."
+        },
+        {
+          "task_id": "typ_home_b2_pack",
+          "phase": "before",
+          "learner_action": "pack_six_safe_go_bag_items_and_store_bag_in_hall",
+          "active_simulation_instruction": "Pack water, canned food, a flashlight, a battery radio, a whistle, and a first-aid kit. A small comfort toy is okay. Leave candles and matches; put the packed bag against the hall wall.",
+          "protocol_ids": [
+            "TYP-BEF-002"
+          ],
+          "mapping_status": "local_review",
+          "required_trusted_flags": {
+            "responsible_adult_present": false,
+            "authenticated_evacuation_order": false
+          },
+          "location_zone": "HOME_SALA",
+          "scope_constraint": "The learner packs the six child-safe items in this VR scene; the first-aid kit stays closed. A small comfort toy is optional. Do not redirect the packing decision to a guardian or other adult."
+        },
+        {
+          "task_id": "typ_home_b3_loose",
+          "phase": "before",
+          "learner_action": "carry_light_garden_chair_and_potted_plant_inside",
+          "active_simulation_instruction": "Carry the light plastic chair and small potted plant from the front garden into storage before the storm. Strong wind can throw them into windows. Leave the heavy clay pot.",
+          "protocol_ids": [],
+          "mapping_status": "evidence_gap",
+          "required_trusted_flags": {
+            "responsible_adult_present": false,
+            "authenticated_evacuation_order": false
+          },
+          "location_zone": "HOME_FRONT_GARDEN",
+          "scope_constraint": "No curated card covers this preparation task. Only the light chair and small plant are moved before hazardous wind; the heavy pot stays put. This storyboard instruction is not retrieval evidence.",
+          "location_type": "outdoor"
+        },
+        {
+          "task_id": "typ_home_d1_shelter",
+          "phase": "during",
+          "learner_action": "move_to_interior_hall_away_from_windows",
+          "active_simulation_instruction": "Move to the middle of the hall, away from every window. Stay indoors while the storm is strong.",
+          "protocol_ids": [
+            "TYP-DUR-001"
+          ],
+          "mapping_status": "local_review",
+          "required_trusted_flags": {
+            "responsible_adult_present": false,
+            "hazard_active": true,
+            "current_shelter_approved": true,
+            "authenticated_evacuation_order": false
+          },
+          "location_zone": "HOME_HALL",
+          "scope_constraint": "The approved shelter in this VR scene is the interior hall. Ground the answer in this trusted shelter state and the learner's own action, without a teacher or guardian handoff."
+        },
+        {
+          "task_id": "typ_home_d2_flashlight",
+          "phase": "during",
+          "learner_action": "turn_on_go_bag_flashlight_during_brownout",
+          "active_simulation_instruction": "Take the flashlight from the go-bag in the hall and switch it on. A candle can start a fire; leave the candle and matches alone.",
+          "protocol_ids": [],
+          "mapping_status": "evidence_gap",
+          "required_trusted_flags": {
+            "responsible_adult_present": false,
+            "hazard_active": true,
+            "current_shelter_approved": true,
+            "authenticated_evacuation_order": false
+          },
+          "location_zone": "HOME_HALL",
+          "scope_constraint": "No curated card covers this brownout task. The learner uses the packed flashlight and does not touch the candle or matches. This storyboard instruction is not retrieval evidence."
+        },
+        {
+          "task_id": "typ_home_d3_calm",
+          "phase": "during",
+          "learner_action": "listen_to_battery_radio_and_breathe_in_hall",
+          "active_simulation_instruction": "Switch on the battery radio in the hall and listen to the storm update. The storm is not over yet; stay away from windows and floodwater and take slow breaths.",
+          "protocol_ids": [
+            "TYP-DUR-001",
+            "TYP-AFT-004"
+          ],
+          "mapping_status": "local_review",
+          "required_trusted_flags": {
+            "responsible_adult_present": false,
+            "hazard_active": true,
+            "current_shelter_approved": true,
+            "rising_water_present": true,
+            "authenticated_evacuation_order": false
+          },
+          "location_zone": "HOME_HALL",
+          "scope_constraint": "The radio update is a scripted storm update, not an all-clear. Reassure the learner and guide slow breathing in the hall; do not redirect feelings or decisions to an adult.",
+          "allow_cross_phase_grounding": true
+        },
+        {
+          "task_id": "typ_home_a1_allclear",
+          "phase": "after",
+          "learner_action": "wait_for_official_radio_all_clear_before_reaching_porch",
+          "active_simulation_instruction": "Stay inside until the official radio all-clear. Quiet weather alone is not clearance. Then walk to the porch, keeping clear of floodwater and fallen wires.",
+          "protocol_ids": [
+            "TYP-AFT-001"
+          ],
+          "mapping_status": "local_review",
+          "required_trusted_flags": {
+            "responsible_adult_present": false,
+            "official_clearance_received": true,
+            "authenticated_evacuation_order": false
+          },
+          "location_zone": "HOME_HALL",
+          "scope_constraint": "The official radio all-clear is the sole clearance in this VR scene. The learner waits for it and then goes to the porch; do not substitute teacher or guardian clearance."
+        },
+        {
+          "task_id": "typ_home_a2_spot",
+          "phase": "after",
+          "learner_action": "identify_five_garden_debris_wire_and_flood_hazards",
+          "active_simulation_instruction": "Identify the fallen branch, torn roof sheet, broken glass, downed wire, and floodwater. Do not touch the debris; a wire can shock you even in water. Stay away from each danger.",
+          "protocol_ids": [
+            "TYP-AFT-002",
+            "TYP-DUR-005"
+          ],
+          "mapping_status": "local_review",
+          "required_trusted_flags": {
+            "responsible_adult_present": true,
+            "official_clearance_received": true,
+            "floodwater_present": true,
+            "downed_line_or_wet_electrical_hazard": true,
+            "authenticated_evacuation_order": false
+          },
+          "location_zone": "HOME_FRONT_GARDEN",
+          "scope_constraint": "This is a spot-and-stay-away task after the official all-clear. Do not tell the learner to handle debris, standing floodwater, or electrical hazards, or hand the identification decision to an adult.",
+          "allow_cross_phase_grounding": true,
+          "location_type": "outdoor"
+        },
+        {
+          "task_id": "typ_home_a3_water",
+          "phase": "after",
+          "learner_action": "empty_rainwater_from_pail_and_paint_can",
+          "active_simulation_instruction": "Tip out the still rainwater in the pail and old paint can on dry ground inside the front garden. Mosquitoes can lay eggs in still water. Stay away from the flooded street.",
+          "protocol_ids": [],
+          "mapping_status": "evidence_gap",
+          "required_trusted_flags": {
+            "responsible_adult_present": true,
+            "official_clearance_received": true,
+            "authenticated_evacuation_order": false
+          },
+          "location_zone": "HOME_FRONT_GARDEN",
+          "scope_constraint": "No curated card covers this child-safe rainwater task. Only isolated rainwater in a pail and can on dry ground inside the lot is tipped out; the learner never touches floodwater or storm debris. This storyboard instruction is not retrieval evidence.",
+          "location_type": "outdoor"
+        },
+        {
+          "task_id": "typ_home_a4_dry",
+          "phase": "after",
+          "learner_action": "remain_on_dry_ground_inside_lot_and_avoid_flood",
+          "active_simulation_instruction": "Stay on dry ground inside the lot near the gate and take slow breaths. Never enter floodwater, even if it looks shallow; it can hide holes and wires.",
+          "protocol_ids": [
+            "TYP-DUR-004"
+          ],
+          "mapping_status": "local_review",
+          "required_trusted_flags": {
+            "responsible_adult_present": true,
+            "floodwater_present": true,
+            "authenticated_evacuation_order": false
+          },
+          "location_zone": "HOME_FRONT_GARDEN",
+          "scope_constraint": "The learner independently stays on the configured dry-ground circle. No floodwater is safe to enter, including shallow water; do not hand the decision to an adult.",
+          "allow_cross_phase_grounding": true,
+          "location_type": "outdoor"
+        }
+      ]
+    },
+    {
       "scene": "Typhoon_School",
       "scenario_id": "unity-typhoon-school-v1",
       "storyboard": "docs/storyboard/Typhoon_School.md",

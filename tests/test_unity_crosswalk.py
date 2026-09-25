@@ -13,8 +13,8 @@ class UnityScenarioCrosswalkTests(unittest.TestCase):
         cls.crosswalk = UnityScenarioCrosswalk()
 
     def test_loads_all_implemented_unity_tasks(self) -> None:
-        self.assertEqual(self.crosswalk.mission_count, 11)
-        self.assertEqual(self.crosswalk.task_count, 80)
+        self.assertEqual(self.crosswalk.mission_count, 12)
+        self.assertEqual(self.crosswalk.task_count, 90)
 
     def test_covers_all_three_hazards(self) -> None:
         hazards = {
@@ -101,6 +101,25 @@ class UnityScenarioCrosswalkTests(unittest.TestCase):
         self.assertEqual(task["protocol_ids"], ["FIR-DUR-001"])
         self.assertTrue(task["allow_cross_phase_grounding"])
 
+    def test_v2_typhoon_home_keeps_v1_and_scopes_conflicting_cards(self) -> None:
+        missions = {mission["scene"]: mission for mission in self.crosswalk.data["missions"]}
+        self.assertEqual(len(missions["Typhoon_Home"]["tasks"]), 9)
+        v2 = missions["Typhoon_Home_V5"]["tasks"]
+        self.assertEqual(
+            [task["task_id"] for task in v2],
+            [
+                "typ_home_b1_news", "typ_home_b2_pack", "typ_home_b3_loose",
+                "typ_home_d1_shelter", "typ_home_d2_flashlight", "typ_home_d3_calm",
+                "typ_home_a1_allclear", "typ_home_a2_spot", "typ_home_a3_water",
+                "typ_home_a4_dry",
+            ],
+        )
+        for task in v2:
+            self.assertFalse(task["required_trusted_flags"]["authenticated_evacuation_order"])
+            self.assertTrue(task["scope_constraint"])
+        for task_id in ("typ_home_d3_calm", "typ_home_a2_spot", "typ_home_a4_dry"):
+            self.assertTrue(self.crosswalk.get_task(task_id)["allow_cross_phase_grounding"])
+
     def test_unknown_unity_task_is_rejected(self) -> None:
         with self.assertRaisesRegex(KeyError, "Unknown Unity task_id"):
             self.crosswalk.retrieval_plan("not_a_real_task")
@@ -109,7 +128,7 @@ class UnityScenarioCrosswalkTests(unittest.TestCase):
         report = validate_crosswalk()
 
         self.assertEqual(report["status"], "PASS", report["errors"])
-        self.assertEqual(report["task_count"], 80)
+        self.assertEqual(report["task_count"], 90)
 
 
 class UnityReconciliationTests(unittest.TestCase):
